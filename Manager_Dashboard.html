@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manager Dashboard — Non-Fee Earner Senior</title>
+<style>
+  :root {
+    --navy:    #1a2f54;
+    --gold:    #b8972e;
+    --green:   #2e7d52;
+    --amber:   #c87d20;
+    --red:     #b83232;
+    --grey:    #f4f6f9;
+    --mid:     #6b7a93;
+    --border:  #d0d8e8;
+    --listen:    #1a5276;
+    --empower:   #145a32;
+    --challenge: #7d3c00;
+    --collab:    #4a235a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--grey); color: #2a2a2a; font-size: 14px; }
+
+  /* HEADER */
+  header {
+    background: var(--navy);
+    color: #fff;
+    padding: 24px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  header h1 { font-size: 20px; font-weight: 700; }
+  header p  { font-size: 12px; color: #aab8cc; margin-top: 3px; }
+  .add-btn {
+    background: var(--gold);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .2s;
+    white-space: nowrap;
+  }
+  .add-btn:hover { background: #a07e20; }
+
+  /* SUMMARY CARDS */
+  .summary-bar {
+    display: flex;
+    gap: 12px;
+    padding: 20px 40px 0;
+    flex-wrap: wrap;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 22px;
+    flex: 1; min-width: 130px;
+    text-align: center;
+  }
+  .card .num { font-size: 30px; font-weight: 700; color: var(--navy); line-height: 1; }
+  .card .lbl { font-size: 11px; color: var(--mid); margin-top: 4px; text-transform: uppercase; letter-spacing: .5px; }
+  .card.green .num { color: var(--green); }
+  .card.amber .num { color: var(--amber); }
+  .card.red   .num { color: var(--red); }
+  .card.gold  .num { color: var(--gold); }
+
+  /* MAIN */
+  main { padding: 24px 40px 60px; }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: #fff;
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    color: var(--mid);
+  }
+  .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state h3 { font-size: 16px; color: var(--navy); margin-bottom: 8px; }
+  .empty-state p  { font-size: 13px; margin-bottom: 20px; }
+  .empty-state button {
+    background: var(--navy); color: #fff; border: none; border-radius: 8px;
+    padding: 10px 22px; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+
+  /* TEAM TABLE */
+  .table-section { display: none; }
+  .table-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .table-controls h2 { font-size: 15px; color: var(--navy); font-weight: 700; }
+  .table-controls .sort-note { font-size: 11px; color: var(--mid); }
+
+  .table-wrap {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  thead th {
+    background: var(--navy);
+    color: #fff;
+    padding: 12px 14px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+  thead th:hover { background: #243f72; }
+  thead th .sort-arrow { margin-left: 4px; opacity: .5; }
+  thead th.sorted .sort-arrow { opacity: 1; }
+
+  /* DNA section header cells */
+  thead th.col-listen    { background: var(--listen); }
+  thead th.col-empower   { background: var(--empower); }
+  thead th.col-challenge { background: var(--challenge); }
+  thead th.col-collab    { background: var(--collab); }
+  thead th.col-listen:hover    { background: #1f6090; }
+  thead th.col-empower:hover   { background: #1a7a40; }
+  thead th.col-challenge:hover { background: #99480a; }
+  thead th.col-collab:hover    { background: #5e2d75; }
+
+  tbody tr.emp-row {
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background .15s;
+  }
+  tbody tr.emp-row:hover { background: #f7f9fd; }
+  tbody tr.emp-row.expanded { background: #f0f5ff; }
+  tbody tr.emp-row:last-child { border-bottom: none; }
+
+  tbody td { padding: 12px 14px; font-size: 13px; vertical-align: middle; }
+
+  .name-cell { font-weight: 600; color: var(--navy); }
+  .name-cell .added-date { display: block; font-size: 10px; color: var(--mid); font-weight: 400; margin-top: 1px; }
+
+  /* Rating cell */
+  .rating-cell {
+    text-align: center;
+    font-weight: 700;
+    font-size: 13px;
+    border-radius: 6px;
+    padding: 5px 10px;
+    min-width: 52px;
+    display: inline-block;
+  }
+  .rc-none  { background: #f0f0f0; color: #bbb; }
+  .rc-1     { background: #fde8e8; color: var(--red); }
+  .rc-2     { background: #fef3e2; color: var(--amber); }
+  .rc-3     { background: #e8f5ee; color: var(--green); }
+  .rc-4     { background: #e8eefb; color: var(--navy); }
+
+  /* Completion bar */
+  .completion-wrap { display: flex; align-items: center; gap: 8px; }
+  .comp-bar { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; min-width: 60px; }
+  .comp-bar-fill { height: 100%; background: var(--navy); border-radius: 3px; transition: width .4s; }
+  .comp-pct { font-size: 11px; color: var(--mid); min-width: 30px; }
+
+  /* Promotion badge */
+  .promo-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .pb-ready     { background: #d4edda; color: var(--green); }
+  .pb-ontrack   { background: #dce8f8; color: var(--navy);  }
+  .pb-developing{ background: #fef3e2; color: var(--amber); }
+  .pb-started   { background: #f0f0f0; color: var(--mid);   }
+
+  /* Actions */
+  .action-cell { text-align: right; white-space: nowrap; }
+  .expand-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--mid); font-size: 18px;
+    transition: transform .3s, color .2s;
+    vertical-align: middle;
+    padding: 2px 6px;
+  }
+  .expand-btn:hover { color: var(--navy); }
+  .expand-btn.open { transform: rotate(180deg); color: var(--navy); }
+  .remove-btn {
+    background: none; border: none; cursor: pointer;
+    color: #ccc; font-size: 14px;
+    vertical-align: middle;
+    padding: 2px 6px;
+    transition: color .2s;
+  }
+  .remove-btn:hover { color: var(--red); }
+
+  /* DETAIL ROW */
+  .detail-row { display: none; }
+  .detail-row.open { display: table-row; }
+  .detail-row td { padding: 0; border-bottom: 2px solid var(--border); }
+  .detail-inner { padding: 16px 20px 20px; background: #f7f9fc; }
+  .detail-inner h4 { font-size: 12px; color: var(--mid); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px; }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  @media (max-width: 900px) {
+    .detail-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .detail-col { }
+  .detail-col-header {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    padding: 6px 10px;
+    border-radius: 6px 6px 0 0;
+    color: #fff;
+    margin-bottom: 2px;
+  }
+  .dch-listen    { background: var(--listen); }
+  .dch-empower   { background: var(--empower); }
+  .dch-challenge { background: var(--challenge); }
+  .dch-collab    { background: var(--collab); }
+
+  .detail-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 10px;
+    font-size: 11.5px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-top: none;
+  }
+  .detail-item:last-child { border-radius: 0 0 6px 6px; }
+  .detail-item .item-label { flex: 1; color: #444; line-height: 1.3; }
+  .detail-item .item-badge {
+    min-width: 22px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 4px;
+    padding: 2px 6px;
+    flex-shrink: 0;
+  }
+  .ib-0 { background: #f0f0f0; color: #bbb; }
+  .ib-1 { background: #fde8e8; color: var(--red);   }
+  .ib-2 { background: #fef3e2; color: var(--amber); }
+  .ib-3 { background: #e8f5ee; color: var(--green); }
+  .ib-4 { background: #e8eefb; color: var(--navy);  }
+
+  /* Updated label */
+  .updated-label { font-size: 10px; color: var(--mid); margin-top: 8px; text-align: right; }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 300;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: #fff;
+    border-radius: 12px;
+    padding: 28px 32px;
+    width: 540px;
+    max-width: 95vw;
+    box-shadow: 0 8px 32px rgba(0,0,0,.2);
+  }
+  .modal-box h3 { font-size: 16px; color: var(--navy); margin-bottom: 6px; }
+  .modal-box p  { font-size: 13px; color: var(--mid); margin-bottom: 14px; line-height: 1.5; }
+  .modal-box textarea {
+    width: 100%;
+    min-height: 110px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 11px;
+    resize: vertical;
+    color: #333;
+  }
+  .modal-box textarea:focus { outline: none; border-color: var(--navy); }
+  .modal-error { font-size: 12px; color: var(--red); min-height: 18px; margin-top: 6px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 14px; justify-content: flex-end; }
+  .modal-actions button {
+    padding: 9px 20px; border-radius: 6px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: 1.5px solid var(--border); background: #fff; color: var(--navy);
+    transition: background .2s;
+  }
+  .modal-actions button:hover { background: var(--grey); }
+  .modal-actions button.primary { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .modal-actions button.primary:hover { background: #243f72; }
+
+  /* LEGEND */
+  .legend {
+    display: flex; gap: 16px; flex-wrap: wrap;
+    padding: 16px 40px 0;
+    font-size: 11px; color: var(--mid); align-items: center;
+  }
+  .legend strong { color: var(--navy); font-size: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  @media print {
+    .add-btn, .remove-btn, .expand-btn { display: none !important; }
+    .detail-row { display: table-row !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Manager Overview — Non-Fee Earner Senior</h1>
+    <p>Savills Competency Framework &nbsp;|&nbsp; <span id="today"></span></p>
+  </div>
+  <button class="add-btn" onclick="openAddModal()">+ Add Team Member</button>
+</header>
+
+<div class="legend">
+  <strong>Rating:</strong>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>1 Improvement</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>2 Development</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>3 Performing</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--navy)"></div>4 High Performing</div>
+  &nbsp;|&nbsp;
+  <strong>Promotion:</strong>
+  <div class="legend-item"><span class="promo-badge pb-ready">Ready for Review</span> Avg ≥3.5 &amp; ≥75% rated</div>
+  <div class="legend-item"><span class="promo-badge pb-ontrack">On Track</span> Avg ≥3.0 &amp; ≥50% rated</div>
+  <div class="legend-item"><span class="promo-badge pb-developing">Developing</span> Below threshold</div>
+</div>
+
+<div class="summary-bar">
+  <div class="card"><div class="num" id="s-members">0</div><div class="lbl">Team Members</div></div>
+  <div class="card gold"><div class="num" id="s-avg">—</div><div class="lbl">Team Avg Rating</div></div>
+  <div class="card green"><div class="num" id="s-ready">0</div><div class="lbl">Ready for Review</div></div>
+  <div class="card amber"><div class="num" id="s-dev">0</div><div class="lbl">Developing</div></div>
+</div>
+
+<main>
+
+  <!-- Empty state -->
+  <div class="empty-state" id="empty-state">
+    <div class="icon">&#128101;</div>
+    <h3>No team members added yet</h3>
+    <p>Ask each team member to click <strong>"Share with Manager"</strong> on their dashboard and send you their code. Paste it here to add them.</p>
+    <button onclick="openAddModal()">+ Add First Team Member</button>
+  </div>
+
+  <!-- Table -->
+  <div class="table-section" id="table-section">
+    <div class="table-controls">
+      <h2>Team Competency Overview</h2>
+      <span class="sort-note">Click a column header to sort</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th onclick="sortBy('name')" data-col="name">Name <span class="sort-arrow">↕</span></th>
+            <th class="col-listen"    onclick="sortBy('listen')"    data-col="listen">We Listen <span class="sort-arrow">↕</span></th>
+            <th class="col-empower"   onclick="sortBy('empower')"   data-col="empower">We Empower <span class="sort-arrow">↕</span></th>
+            <th class="col-challenge" onclick="sortBy('challenge')" data-col="challenge">We Challenge <span class="sort-arrow">↕</span></th>
+            <th class="col-collab"    onclick="sortBy('collab')"    data-col="collab">We Collaborate <span class="sort-arrow">↕</span></th>
+            <th onclick="sortBy('overall')" data-col="overall">Overall <span class="sort-arrow">↕</span></th>
+            <th onclick="sortBy('completion')" data-col="completion">Done <span class="sort-arrow">↕</span></th>
+            <th onclick="sortBy('promo')" data-col="promo">Status <span class="sort-arrow">↕</span></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="team-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- Add Employee Modal -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal-box">
+    <h3>Add Team Member</h3>
+    <p>Ask the team member to open their Competency Tracker, click <strong>"Share with Manager"</strong>, and copy the code. Paste it below. They can reshare at any time to update their ratings here.</p>
+    <textarea id="paste-area" placeholder="Paste code here (starts with SAVILLS-SENIOR-V2:...)"></textarea>
+    <div class="modal-error" id="modal-error"></div>
+    <div class="modal-actions">
+      <button onclick="closeAddModal()">Cancel</button>
+      <button class="primary" onclick="addEmployee()">Add / Update</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA DEFINITIONS ──
+const SECTION_IDS = {
+  listen:    ['rs1','rs2','wo1','wo2','wo3','wo4','wo5','wo6'],
+  empower:   ['oe1','oe2','oe3','oe4','gi1','gi2','gi3'],
+  challenge: ['dr1','mi1','mi2','mi3','ci1'],
+  collab:    ['nw1','nw2','kh1','kh2','kh3','kh4','kh5','kh6','kh7','kh8']
+};
+const ALL_IDS = Object.values(SECTION_IDS).flat();
+
+const SECTION_LABELS = {
+  listen:    { title: 'We Listen',      cls: 'dch-listen' },
+  empower:   { title: 'We Empower',     cls: 'dch-empower' },
+  challenge: { title: 'We Challenge',   cls: 'dch-challenge' },
+  collab:    { title: 'We Collaborate', cls: 'dch-collab' }
+};
+
+const ITEM_LABELS = {
+  rs1: 'Significant peer relationships in other divisions',
+  rs2: 'Proactively manages client requests & expectations',
+  wo1: 'Responds to feedback positively',
+  wo2: 'Actively listens to others\' views',
+  wo3: 'Helps colleagues achieve objectives',
+  wo4: 'Recognises others\' contributions',
+  wo5: 'Shares expertise, encourages teamwork',
+  wo6: 'Promotes an inclusive workplace',
+  oe1: 'Generates own workload, delegates appropriately',
+  oe2: 'Responsibility extends beyond department',
+  oe3: 'Takes on additional responsibilities',
+  oe4: 'Learns and shares working styles',
+  gi1: 'Understands own & others\' comm. style',
+  gi2: 'High personal standards & presentation',
+  gi3: 'Competent at internal presentations',
+  dr1: 'Drives cross-selling / cross-division referrals',
+  mi1: 'Current on market & economic developments',
+  mi2: 'Understands wider property market',
+  mi3: 'Understands ESG and its market impact',
+  ci1: 'Provides suggestions for process improvement',
+  nw1: 'Exchanges client info within Savills',
+  nw2: 'Notable profile outside own division',
+  kh1: 'Explains own job\'s contribution to team',
+  kh2: 'Understands Savills strategy incl. D&I',
+  kh3: 'Understands Savills services',
+  kh4: 'Understands Savills financial performance',
+  kh5: 'Advanced Microsoft package skills',
+  kh6: 'Advanced Savills IT system skills',
+  kh7: 'Advanced invoicing skills',
+  kh8: 'Typing speed and accuracy'
+};
+
+const RATING_LABELS = { '0':'—', '1':'1', '2':'2', '3':'3', '4':'4' };
+
+// ── STATE ──
+let employees = [];
+let sortCol   = 'name';
+let sortAsc   = true;
+
+// ── PERSISTENCE ──
+function loadData() {
+  try { employees = JSON.parse(localStorage.getItem('savills_mgr_v2') || '[]'); } catch(e) { employees = []; }
+}
+function saveData() {
+  try { localStorage.setItem('savills_mgr_v2', JSON.stringify(employees)); } catch(e) {}
+}
+
+// ── PARSE EXPORT CODE ──
+function parseCode(code) {
+  code = (code || '').trim();
+  if (!code.startsWith('SAVILLS-SENIOR-V2:')) return null;
+  try {
+    return JSON.parse(decodeURIComponent(atob(code.slice(18))));
+  } catch(e) { return null; }
+}
+
+// ── CALCULATIONS ──
+function avg(ratings, ids) {
+  const vals = ids.map(id => parseInt(ratings[id]||'0')).filter(v => v > 0);
+  return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+}
+
+function completion(ratings) {
+  return ALL_IDS.filter(id => parseInt(ratings[id]||'0') > 0).length / ALL_IDS.length;
+}
+
+function promoStatus(emp) {
+  const c = completion(emp.ratings);
+  const o = avg(emp.ratings, ALL_IDS.filter(id => parseInt(emp.ratings[id]||'0') > 0));
+  if (c < 0.25) return { label: 'Just Started', cls: 'pb-started', order: 0 };
+  if (o >= 3.5 && c >= 0.75) return { label: 'Ready for Review', cls: 'pb-ready',     order: 3 };
+  if (o >= 3.0 && c >= 0.50) return { label: 'On Track',          cls: 'pb-ontrack',   order: 2 };
+  return                             { label: 'Developing',        cls: 'pb-developing',order: 1 };
+}
+
+function ratingClass(v) {
+  if (v === null) return 'rc-none';
+  if (v < 1.5) return 'rc-1';
+  if (v < 2.5) return 'rc-2';
+  if (v < 3.5) return 'rc-3';
+  return 'rc-4';
+}
+
+function fmt(v) { return v === null ? '—' : v.toFixed(1); }
+
+// ── SUMMARY CARDS ──
+function updateSummary() {
+  const n = employees.length;
+  document.getElementById('s-members').textContent = n;
+  if (n === 0) {
+    document.getElementById('s-avg').textContent   = '—';
+    document.getElementById('s-ready').textContent = '0';
+    document.getElementById('s-dev').textContent   = '0';
+    return;
+  }
+  const avgs = employees.map(e => avg(e.ratings, ALL_IDS.filter(id=>parseInt(e.ratings[id]||'0')>0))).filter(v=>v!==null);
+  const teamAvg = avgs.length ? avgs.reduce((a,b)=>a+b,0)/avgs.length : null;
+  document.getElementById('s-avg').textContent = teamAvg ? teamAvg.toFixed(1) : '—';
+
+  let ready = 0, dev = 0;
+  employees.forEach(e => {
+    const s = promoStatus(e);
+    if (s.label === 'Ready for Review') ready++;
+    if (s.label === 'Developing' || s.label === 'Just Started') dev++;
+  });
+  document.getElementById('s-ready').textContent = ready;
+  document.getElementById('s-dev').textContent   = dev;
+}
+
+// ── SORT ──
+function sortBy(col) {
+  if (sortCol === col) { sortAsc = !sortAsc; } else { sortCol = col; sortAsc = true; }
+  document.querySelectorAll('thead th').forEach(th => th.classList.remove('sorted'));
+  const sorted = document.querySelector(`thead th[data-col="${col}"]`);
+  if (sorted) sorted.classList.add('sorted');
+  renderTable();
+}
+
+function sortedEmployees() {
+  return [...employees].sort((a, b) => {
+    let va, vb;
+    switch(sortCol) {
+      case 'name':       va = a.name.toLowerCase(); vb = b.name.toLowerCase(); break;
+      case 'listen':     va = avg(a.ratings, SECTION_IDS.listen)    ?? -1; vb = avg(b.ratings, SECTION_IDS.listen)    ?? -1; break;
+      case 'empower':    va = avg(a.ratings, SECTION_IDS.empower)   ?? -1; vb = avg(b.ratings, SECTION_IDS.empower)   ?? -1; break;
+      case 'challenge':  va = avg(a.ratings, SECTION_IDS.challenge) ?? -1; vb = avg(b.ratings, SECTION_IDS.challenge) ?? -1; break;
+      case 'collab':     va = avg(a.ratings, SECTION_IDS.collab)    ?? -1; vb = avg(b.ratings, SECTION_IDS.collab)    ?? -1; break;
+      case 'overall':    va = avg(a.ratings, ALL_IDS.filter(id=>parseInt(a.ratings[id]||'0')>0)) ?? -1;
+                         vb = avg(b.ratings, ALL_IDS.filter(id=>parseInt(b.ratings[id]||'0')>0)) ?? -1; break;
+      case 'completion': va = completion(a.ratings); vb = completion(b.ratings); break;
+      case 'promo':      va = promoStatus(a).order;  vb = promoStatus(b).order;  break;
+      default:           va = a.name; vb = b.name;
+    }
+    if (va < vb) return sortAsc ? -1 : 1;
+    if (va > vb) return sortAsc ?  1 : -1;
+    return 0;
+  });
+}
+
+// ── RENDER TABLE ──
+function renderTable() {
+  const tbody = document.getElementById('team-tbody');
+  tbody.innerHTML = '';
+
+  const openIds = Array.from(document.querySelectorAll('.detail-row.open')).map(r => r.dataset.emp);
+
+  sortedEmployees().forEach(emp => {
+    const listenAvg    = avg(emp.ratings, SECTION_IDS.listen);
+    const empowerAvg   = avg(emp.ratings, SECTION_IDS.empower);
+    const challengeAvg = avg(emp.ratings, SECTION_IDS.challenge);
+    const collabAvg    = avg(emp.ratings, SECTION_IDS.collab);
+    const ratedIds     = ALL_IDS.filter(id => parseInt(emp.ratings[id]||'0') > 0);
+    const overallAvg   = avg(emp.ratings, ratedIds);
+    const comp         = completion(emp.ratings);
+    const promo        = promoStatus(emp);
+    const isOpen       = openIds.includes(emp.id);
+
+    // Main row
+    const tr = document.createElement('tr');
+    tr.className = 'emp-row' + (isOpen ? ' expanded' : '');
+    tr.dataset.emp = emp.id;
+    tr.onclick = () => toggleDetail(emp.id);
+
+    tr.innerHTML = `
+      <td class="name-cell">${emp.name}<span class="added-date">Updated ${emp.exported}</span></td>
+      <td><span class="rating-cell ${ratingClass(listenAvg)}">${fmt(listenAvg)}</span></td>
+      <td><span class="rating-cell ${ratingClass(empowerAvg)}">${fmt(empowerAvg)}</span></td>
+      <td><span class="rating-cell ${ratingClass(challengeAvg)}">${fmt(challengeAvg)}</span></td>
+      <td><span class="rating-cell ${ratingClass(collabAvg)}">${fmt(collabAvg)}</span></td>
+      <td><span class="rating-cell ${ratingClass(overallAvg)}">${fmt(overallAvg)}</span></td>
+      <td>
+        <div class="completion-wrap">
+          <div class="comp-bar"><div class="comp-bar-fill" style="width:${(comp*100).toFixed(0)}%"></div></div>
+          <span class="comp-pct">${(comp*100).toFixed(0)}%</span>
+        </div>
+      </td>
+      <td><span class="promo-badge ${promo.cls}">${promo.label}</span></td>
+      <td class="action-cell" onclick="event.stopPropagation()">
+        <button class="expand-btn ${isOpen?'open':''}" id="expbtn-${emp.id}" onclick="toggleDetail('${emp.id}')">&#9660;</button>
+        <button class="remove-btn" onclick="removeEmployee('${emp.id}')" title="Remove">&#10005;</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+
+    // Detail row
+    const dtr = document.createElement('tr');
+    dtr.className = 'detail-row' + (isOpen ? ' open' : '');
+    dtr.dataset.emp = emp.id;
+    dtr.id = 'detail-'+emp.id;
+
+    const cols = Object.entries(SECTION_IDS).map(([sec, ids]) => {
+      const { title, cls } = SECTION_LABELS[sec];
+      const items = ids.map(id => {
+        const v = emp.ratings[id] || '0';
+        return `<div class="detail-item">
+          <span class="item-label">${ITEM_LABELS[id]}</span>
+          <span class="item-badge ib-${v}">${v==='0'?'—':v}</span>
+        </div>`;
+      }).join('');
+      return `<div class="detail-col">
+        <div class="detail-col-header ${cls}">${title}</div>
+        ${items}
+      </div>`;
+    }).join('');
+
+    dtr.innerHTML = `<td colspan="9">
+      <div class="detail-inner">
+        <h4>Individual Competency Ratings — ${emp.name}</h4>
+        <div class="detail-grid">${cols}</div>
+        <div class="updated-label">Data exported by employee on ${emp.exported}</div>
+      </div>
+    </td>`;
+    tbody.appendChild(dtr);
+  });
+}
+
+function toggleDetail(empId) {
+  const dtr = document.getElementById('detail-'+empId);
+  const btn = document.getElementById('expbtn-'+empId);
+  const row = document.querySelector(`tr.emp-row[data-emp="${empId}"]`);
+  const isOpen = dtr.classList.contains('open');
+  dtr.classList.toggle('open', !isOpen);
+  btn.classList.toggle('open', !isOpen);
+  row.classList.toggle('expanded', !isOpen);
+}
+
+// ── ADD EMPLOYEE ──
+function openAddModal() {
+  document.getElementById('paste-area').value = '';
+  document.getElementById('modal-error').textContent = '';
+  document.getElementById('add-modal').classList.add('open');
+  setTimeout(() => document.getElementById('paste-area').focus(), 100);
+}
+function closeAddModal() {
+  document.getElementById('add-modal').classList.remove('open');
+}
+
+function addEmployee() {
+  const code = document.getElementById('paste-area').value.trim();
+  const data = parseCode(code);
+  if (!data) {
+    document.getElementById('modal-error').textContent = 'Invalid code. Make sure you copied the full code from the employee\'s dashboard.';
+    return;
+  }
+
+  const existing = employees.findIndex(e => e.name.toLowerCase() === data.name.toLowerCase());
+  const emp = { id: data.name.replace(/\s+/g,'-').toLowerCase() + '-' + Date.now(), name: data.name, exported: data.exported, ratings: data.ratings };
+
+  if (existing >= 0) {
+    employees[existing] = { ...employees[existing], exported: data.exported, ratings: data.ratings };
+  } else {
+    employees.push(emp);
+  }
+
+  saveData();
+  closeAddModal();
+  refresh();
+}
+
+// ── REMOVE EMPLOYEE ──
+function removeEmployee(empId) {
+  if (!confirm('Remove this team member from the dashboard?')) return;
+  employees = employees.filter(e => e.id !== empId);
+  saveData();
+  refresh();
+}
+
+// ── REFRESH ──
+function refresh() {
+  const hasEmployees = employees.length > 0;
+  document.getElementById('empty-state').style.display    = hasEmployees ? 'none'  : 'block';
+  document.getElementById('table-section').style.display  = hasEmployees ? 'block' : 'none';
+  if (hasEmployees) renderTable();
+  updateSummary();
+}
+
+// ── INIT ──
+document.getElementById('today').textContent = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
+loadData();
+refresh();
+</script>
+</body>
+</html>
