@@ -366,6 +366,75 @@
   }
   .print-btn:hover { background: #243f72; }
 
+  .share-btn {
+    position: fixed;
+    bottom: 28px;
+    right: 210px;
+    background: var(--gold);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(184,151,46,.4);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 100;
+    transition: background .2s;
+  }
+  .share-btn:hover { background: #a07e20; }
+
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: #fff;
+    border-radius: 12px;
+    padding: 28px 32px;
+    width: 520px;
+    max-width: 95vw;
+    box-shadow: 0 8px 32px rgba(0,0,0,.2);
+  }
+  .modal-box h3 { font-size: 16px; color: var(--navy); margin-bottom: 6px; }
+  .modal-box p  { font-size: 13px; color: var(--mid); margin-bottom: 14px; line-height: 1.5; }
+  .modal-box textarea {
+    width: 100%;
+    height: 90px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 11px;
+    resize: none;
+    color: #333;
+    background: #f9fafb;
+  }
+  .modal-actions { display: flex; gap: 10px; margin-top: 14px; justify-content: flex-end; }
+  .modal-actions button {
+    padding: 9px 20px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid var(--border);
+    background: #fff;
+    color: var(--navy);
+    transition: background .2s;
+  }
+  .modal-actions button:hover { background: var(--grey); }
+  .modal-actions button.primary { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .modal-actions button.primary:hover { background: #243f72; }
+  .copy-confirm { font-size: 12px; color: var(--green); margin-top: 6px; min-height: 18px; text-align: right; }
+
   @media print {
     .print-btn, .evidence-toggle { display: none !important; }
     .evidence-area { display: block !important; }
@@ -429,7 +498,21 @@
 
 <main id="main"></main>
 
+<button class="share-btn" onclick="openExportModal()">&#128279; Share with Manager</button>
 <button class="print-btn" onclick="window.print()">&#128438; Print / Save PDF</button>
+
+<div class="modal-overlay" id="export-modal">
+  <div class="modal-box">
+    <h3>Share with Manager</h3>
+    <p>Copy the code below and send it to your manager. They paste it into the Manager Dashboard to see your ratings. Reshare whenever you update your ratings.</p>
+    <textarea id="export-code-area" readonly></textarea>
+    <div class="copy-confirm" id="copy-confirm"></div>
+    <div class="modal-actions">
+      <button onclick="closeExportModal()">Close</button>
+      <button class="primary" onclick="copyExportCode()">&#128203; Copy Code</button>
+    </div>
+  </div>
+</div>
 
 <script>
 const SECTIONS = [
@@ -751,6 +834,44 @@ nameEl.addEventListener("input", () => { save("username", nameEl.textContent.tri
 
 updateCounts();
 updateSectionProgress();
+
+const ALL_IDS = ['rs1','rs2','wo1','wo2','wo3','wo4','wo5','wo6',
+                 'oe1','oe2','oe3','oe4','gi1','gi2','gi3',
+                 'dr1','mi1','mi2','mi3','ci1',
+                 'nw1','nw2','kh1','kh2','kh3','kh4','kh5','kh6','kh7','kh8'];
+
+function openExportModal() {
+  const ratings = {};
+  ALL_IDS.forEach(id => {
+    const sel = document.getElementById('sel-'+id);
+    if (sel) ratings[id] = sel.value;
+  });
+  const data = {
+    v: 2,
+    name: document.getElementById('user-name').textContent.trim() || 'Unknown',
+    exported: new Date().toISOString().split('T')[0],
+    ratings
+  };
+  const code = 'SAVILLS-SENIOR-V2:' + btoa(encodeURIComponent(JSON.stringify(data)));
+  document.getElementById('export-code-area').value = code;
+  document.getElementById('copy-confirm').textContent = '';
+  document.getElementById('export-modal').classList.add('open');
+}
+
+function closeExportModal() {
+  document.getElementById('export-modal').classList.remove('open');
+}
+
+function copyExportCode() {
+  const code = document.getElementById('export-code-area').value;
+  navigator.clipboard.writeText(code).then(() => {
+    document.getElementById('copy-confirm').textContent = 'Copied to clipboard ✓';
+  }).catch(() => {
+    document.getElementById('export-code-area').select();
+    document.execCommand('copy');
+    document.getElementById('copy-confirm').textContent = 'Copied ✓';
+  });
+}
 </script>
 </body>
 </html>
