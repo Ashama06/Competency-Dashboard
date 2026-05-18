@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Non-Fee Earner Senior — Competency Tracker</title>
+<style>
+  :root {
+    --navy:  #1a2f54;
+    --gold:  #b8972e;
+    --light-gold: #f5efe0;
+    --green: #2e7d52;
+    --amber: #c87d20;
+    --red:   #b83232;
+    --grey:  #f4f6f9;
+    --mid:   #6b7a93;
+    --border:#d0d8e8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: var(--grey);
+    color: #2a2a2a;
+    font-size: 14px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--navy);
+    color: #fff;
+    padding: 28px 40px 24px;
+    display: flex;
+    align-items: flex-end;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  header .title-block h1 { font-size: 22px; font-weight: 700; letter-spacing: .5px; }
+  header .title-block p  { font-size: 13px; color: #aab8cc; margin-top: 4px; }
+  header .badge {
+    margin-left: auto;
+    background: var(--gold);
+    color: #fff;
+    border-radius: 20px;
+    padding: 6px 18px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* ── SUMMARY CARDS ── */
+  .summary-bar {
+    display: flex;
+    gap: 16px;
+    padding: 24px 40px 0;
+    flex-wrap: wrap;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 22px;
+    flex: 1;
+    min-width: 140px;
+    text-align: center;
+  }
+  .card .num { font-size: 32px; font-weight: 700; color: var(--navy); line-height: 1; }
+  .card .lbl { font-size: 11px; color: var(--mid); margin-top: 4px; text-transform: uppercase; letter-spacing: .5px; }
+  .card.green .num { color: var(--green); }
+  .card.amber .num { color: var(--amber); }
+  .card.red   .num { color: var(--red);   }
+
+  /* overall progress bar */
+  .overall-wrap {
+    padding: 20px 40px 0;
+  }
+  .overall-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--mid);
+    margin-bottom: 6px;
+  }
+  .overall-label strong { color: var(--navy); font-size: 14px; }
+  .bar-track {
+    height: 12px;
+    background: var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--navy), #2e5fa3);
+    border-radius: 6px;
+    transition: width .6s ease;
+  }
+
+  /* ── MAIN LAYOUT ── */
+  main { padding: 24px 40px 60px; }
+
+  .section {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+
+  .section-header {
+    background: var(--navy);
+    color: #fff;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+  }
+  .section-header h2 { font-size: 14px; font-weight: 700; letter-spacing: .4px; }
+  .section-header .sec-prog {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+  }
+  .mini-bar-track {
+    width: 100px;
+    height: 6px;
+    background: rgba(255,255,255,.25);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .mini-bar-fill {
+    height: 100%;
+    background: var(--gold);
+    border-radius: 3px;
+    transition: width .4s ease;
+  }
+  .toggle-icon { font-size: 16px; transition: transform .3s; }
+  .section-header.collapsed .toggle-icon { transform: rotate(-90deg); }
+
+  .section-body { display: block; }
+  .section-body.hidden { display: none; }
+
+  /* sub-heading inside section */
+  .sub-label {
+    background: var(--light-gold);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 20px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: .6px;
+  }
+
+  /* ── COMPETENCY ROW ── */
+  .comp-row {
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+  }
+  .comp-row:last-child { border-bottom: none; }
+
+  .comp-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .comp-text {
+    flex: 1;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: #2a2a2a;
+  }
+  .comp-text em {
+    display: block;
+    font-style: normal;
+    font-size: 11px;
+    color: var(--mid);
+    margin-top: 2px;
+  }
+
+  .status-select {
+    min-width: 160px;
+    padding: 6px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7a93'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
+    cursor: pointer;
+    transition: border-color .2s;
+  }
+  .status-select:focus { outline: none; border-color: var(--navy); }
+
+  /* colour-code the select by value */
+  .status-select[data-v="0"] { color: var(--mid);   border-color: var(--border); background-color: #f9fafb; }
+  .status-select[data-v="1"] { color: var(--red);   border-color: #f0cccc; background-color: #fff8f8; }
+  .status-select[data-v="2"] { color: var(--amber); border-color: #f5dec8; background-color: #fffbf5; }
+  .status-select[data-v="3"] { color: var(--green); border-color: #c2e0d0; background-color: #f5fdf8; }
+  .status-select[data-v="4"] { color: var(--navy);  border-color: #b8ccee; background-color: #f0f5ff; }
+
+  /* evidence area */
+  .evidence-toggle {
+    font-size: 11px;
+    color: var(--mid);
+    cursor: pointer;
+    margin-top: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: none;
+    background: none;
+    padding: 0;
+  }
+  .evidence-toggle:hover { color: var(--navy); }
+  .evidence-area {
+    display: none;
+    margin-top: 8px;
+  }
+  .evidence-area textarea {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 70px;
+    color: #333;
+  }
+  .evidence-area textarea:focus { outline: none; border-color: var(--navy); }
+  .evidence-area textarea::placeholder { color: #bbb; }
+
+  /* ── STATUS DOTS ── */
+  .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 5px;
+  }
+  .dot-0 { background: #ccc; }
+  .dot-1 { background: var(--red); }
+  .dot-2 { background: var(--amber); }
+  .dot-3 { background: var(--green); }
+  .dot-4 { background: var(--navy); }
+
+  /* ── LEGEND ── */
+  .legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding: 20px 40px 4px;
+    font-size: 12px;
+    color: var(--mid);
+    align-items: center;
+  }
+  .legend strong { color: var(--navy); font-size: 13px; margin-right: 4px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* ── PRINT ── */
+  .print-btn {
+    position: fixed;
+    bottom: 28px;
+    right: 32px;
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(26,47,84,.35);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 100;
+    transition: background .2s;
+  }
+  .print-btn:hover { background: #243f72; }
+
+  .save-note {
+    text-align: right;
+    padding: 0 40px 8px;
+    font-size: 11px;
+    color: var(--mid);
+  }
+
+  @media print {
+    .print-btn, .evidence-toggle { display: none !important; }
+    .evidence-area { display: block !important; }
+    header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .section-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .section-body.hidden { display: block !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title-block">
+    <h1>Non-Fee Earner — Senior</h1>
+    <p>Competency Tracker &nbsp;|&nbsp; Eyanye Ashama &nbsp;|&nbsp; <span id="today"></span></p>
+  </div>
+  <div class="badge">Savills Competency Framework</div>
+</header>
+
+<div class="legend">
+  <strong>Status key:</strong>
+  <div class="legend-item"><div class="legend-dot" style="background:#ccc"></div> Not yet started</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Needs development</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div> In progress / developing</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Meeting expectation</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--navy)"></div> Exceeding expectation</div>
+</div>
+
+<div class="overall-wrap">
+  <div class="overall-label">
+    <strong>Overall progress</strong>
+    <span id="overall-pct">0%</span>
+  </div>
+  <div class="bar-track"><div class="bar-fill" id="overall-bar" style="width:0%"></div></div>
+</div>
+
+<div class="summary-bar">
+  <div class="card"><div class="num" id="cnt-total">29</div><div class="lbl">Total Competencies</div></div>
+  <div class="card green"><div class="num" id="cnt-met">0</div><div class="lbl">Meeting / Exceeding</div></div>
+  <div class="card amber"><div class="num" id="cnt-prog">0</div><div class="lbl">In Progress</div></div>
+  <div class="card red"><div class="num" id="cnt-needs">0</div><div class="lbl">Needs Development</div></div>
+  <div class="card"><div class="num" id="cnt-ns">29</div><div class="lbl">Not Yet Rated</div></div>
+</div>
+
+<div class="save-note" id="save-note">Changes are saved automatically in your browser.</div>
+
+<main id="main"></main>
+
+<button class="print-btn" onclick="window.print()">&#128438; Print / Save PDF</button>
+
+<script>
+const DATA = [
+  {
+    id: "client-business",
+    title: "CLIENT AND BUSINESS",
+    sub: null,
+    items: [
+      { id:"cb1", text: "Continually looks for ways to increase internal and external client satisfaction by seeking feedback and developing own standards and service levels." },
+      { id:"cb2", text: "Demonstrates best business practice." }
+    ]
+  },
+  {
+    id: "relationship",
+    title: "CLIENT AND BUSINESS",
+    sub: "Relationship Skills — internal and external client management and service",
+    items: [
+      { id:"rs1", text: "Has significant relationships with peers in other divisions." },
+      { id:"rs2", text: "Proactively deals with client requests, building rapport and managing expectations." }
+    ]
+  },
+  {
+    id: "driving",
+    title: "CLIENT AND BUSINESS",
+    sub: "Driving for Results — sales and negotiation skills",
+    items: [
+      { id:"dr1", text: "Understands services offered by other, related divisions and the importance of cross-selling / referring external clients to other areas of the business." }
+    ]
+  },
+  {
+    id: "network",
+    title: "CLIENT AND BUSINESS",
+    sub: "Network — growth of internal and external client networks",
+    items: [
+      { id:"nw1", text: "Understands the importance of exchanging information on clients with others within Savills." },
+      { id:"nw2", text: "Has a notable profile outside own division." }
+    ]
+  },
+  {
+    id: "knowhow",
+    title: "CLIENT AND BUSINESS",
+    sub: "Savills Know-How — knowledge of own role, division and Savills as a business",
+    items: [
+      { id:"kh1", text: "Can explain how own job contributes to the day-to-day operation of the team." },
+      { id:"kh2", text: "Demonstrates an understanding of Savills objectives and overall strategy needed to attain these goals, including sustainability and diversity & inclusion objectives." },
+      { id:"kh3", text: "Understands the services that Savills provides to clients." },
+      { id:"kh4", text: "Understands Savills financial performance." }
+    ]
+  },
+  {
+    id: "admin",
+    title: "CLIENT AND BUSINESS",
+    sub: "Administrative / Support Skills — competence in administrative skills and programmes",
+    items: [
+      { id:"ad1", text: "Demonstrates intermediate to advanced capability in all Microsoft packages used within Savills.", hint:"e.g. Word, Excel, PowerPoint, Outlook, Teams" },
+      { id:"ad2", text: "Demonstrates intermediate to advanced capability in Savills IT Systems.", hint:"e.g. Reapit / Dynamics / Concur (as appropriate), My HR" },
+      { id:"ad3", text: "Demonstrates intermediate to advanced capability in Invoicing (purchase and client)." },
+      { id:"ad4", text: "Demonstrates intermediate to advanced capability in typing skills — speed and accuracy." }
+    ]
+  },
+  {
+    id: "continuous",
+    title: "CLIENT AND BUSINESS",
+    sub: "Continuous Improvement — openness to and facilitation of improvements to business processes",
+    items: [
+      { id:"ci1", text: "Provides suggestions to the team for improving / enhancing business processes." }
+    ]
+  },
+  {
+    id: "org",
+    title: "MANAGEMENT AND LEADERSHIP",
+    sub: "Organisation and Effectiveness — work performance, speed and attention to detail",
+    items: [
+      { id:"oe1", text: "Generates own workload — is not purely carrying out work for their line manager and delegates work as appropriate." },
+      { id:"oe2", text: "Has a high level of responsibility, which extends beyond the department." },
+      { id:"oe3", text: "Takes on additional responsibilities outside the core job role." },
+      { id:"oe4", text: "Learns from and shares different working styles and methods." }
+    ]
+  },
+  {
+    id: "gravitas",
+    title: "MANAGEMENT AND LEADERSHIP",
+    sub: "Gravitas and Impact — personal presentation and communication skills",
+    items: [
+      { id:"gi1", text: "Understands own and others' communication and management style and preference." },
+      { id:"gi2", text: "Demonstrates a high level of personal standards and presentation." },
+      { id:"gi3", text: "Demonstrates competence at presenting internally to peers and team." }
+    ]
+  },
+  {
+    id: "working",
+    title: "MANAGEMENT AND LEADERSHIP",
+    sub: "Working with Others — peer communication and teamwork",
+    items: [
+      { id:"wo1", text: "Responds to feedback in a positive manner, quickly addressing and resolving any problems." },
+      { id:"wo2", text: "Actively listens to and takes account of others' views and opinions." },
+      { id:"wo3", text: "Demonstrates a willingness to help colleagues / the team in achieving objectives." },
+      { id:"wo4", text: "Recognises and praises the contribution made by others." },
+      { id:"wo5", text: "Shares information and own expertise with others and encourages teamwork." },
+      { id:"wo6", text: "Promotes an inclusive workplace." }
+    ]
+  }
+];
+
+// group sections by title
+const SECTIONS = {};
+DATA.forEach(d => {
+  if (!SECTIONS[d.title]) SECTIONS[d.title] = [];
+  SECTIONS[d.title].push(d);
+});
+
+// collect all items flat
+const ALL_ITEMS = DATA.flatMap(d => d.items);
+const TOTAL = ALL_ITEMS.length;
+
+// ── LOAD SAVED DATA ──
+function load(key, def) {
+  try { const v = localStorage.getItem("savills_senior_"+key); return v !== null ? JSON.parse(v) : def; } catch(e){ return def; }
+}
+function save(key, val) {
+  try { localStorage.setItem("savills_senior_"+key, JSON.stringify(val)); } catch(e){}
+}
+
+// ── BUILD DOM ──
+const main = document.getElementById("main");
+
+Object.entries(SECTIONS).forEach(([title, groups]) => {
+  const sec = document.createElement("div");
+  sec.className = "section";
+  sec.id = "sec-" + title.replace(/\W+/g,"-").toLowerCase();
+
+  const allIds = groups.flatMap(g => g.items.map(i => i.id));
+
+  sec.innerHTML = `
+    <div class="section-header" onclick="toggleSection(this)">
+      <h2>${title}</h2>
+      <div class="sec-prog">
+        <span class="sec-pct" data-ids="${allIds.join(",")}">0%</span>
+        <div class="mini-bar-track"><div class="mini-bar-fill" style="width:0%"></div></div>
+        <span class="toggle-icon">&#9660;</span>
+      </div>
+    </div>
+    <div class="section-body"></div>
+  `;
+
+  const body = sec.querySelector(".section-body");
+
+  groups.forEach(group => {
+    if (group.sub) {
+      const sl = document.createElement("div");
+      sl.className = "sub-label";
+      sl.textContent = group.sub;
+      body.appendChild(sl);
+    }
+
+    group.items.forEach(item => {
+      const savedStatus = load("status_"+item.id, "0");
+      const savedNote   = load("note_"+item.id,   "");
+
+      const row = document.createElement("div");
+      row.className = "comp-row";
+      row.innerHTML = `
+        <div class="comp-top">
+          <div class="dot dot-${savedStatus}" id="dot-${item.id}"></div>
+          <div class="comp-text">
+            ${item.text}
+            ${item.hint ? `<em>${item.hint}</em>` : ""}
+          </div>
+          <select class="status-select" id="sel-${item.id}" data-id="${item.id}" data-v="${savedStatus}">
+            <option value="0" ${savedStatus=="0"?"selected":""}>— Not yet rated</option>
+            <option value="1" ${savedStatus=="1"?"selected":""}>Needs development</option>
+            <option value="2" ${savedStatus=="2"?"selected":""}>In progress / developing</option>
+            <option value="3" ${savedStatus=="3"?"selected":""}>Meeting expectation</option>
+            <option value="4" ${savedStatus=="4"?"selected":""}>Exceeding expectation</option>
+          </select>
+        </div>
+        <button class="evidence-toggle" onclick="toggleEvidence('${item.id}')">&#9654; Add evidence / notes</button>
+        <div class="evidence-area" id="ev-${item.id}">
+          <textarea id="note-${item.id}" placeholder="Describe how you have demonstrated this competency, with specific examples or dates…">${savedNote}</textarea>
+        </div>
+      `;
+      body.appendChild(row);
+
+      // events
+      const sel = row.querySelector("select");
+      sel.addEventListener("change", () => {
+        const v = sel.value;
+        sel.dataset.v = v;
+        document.getElementById("dot-"+item.id).className = "dot dot-"+v;
+        save("status_"+item.id, v);
+        updateCounts();
+        updateSectionProgress();
+        showSaveNote();
+      });
+
+      const ta = row.querySelector("textarea");
+      ta.addEventListener("input", () => {
+        save("note_"+item.id, ta.value);
+        showSaveNote();
+      });
+
+      // show evidence pane if note exists
+      if (savedNote) {
+        row.querySelector(".evidence-area").style.display = "block";
+        row.querySelector(".evidence-toggle").innerHTML = "&#9660; Evidence / notes";
+      }
+    });
+  });
+
+  main.appendChild(sec);
+});
+
+// ── TOGGLE SECTION ──
+function toggleSection(header) {
+  const body = header.nextElementSibling;
+  const icon = header.querySelector(".toggle-icon");
+  if (body.classList.contains("hidden")) {
+    body.classList.remove("hidden");
+    header.classList.remove("collapsed");
+  } else {
+    body.classList.add("hidden");
+    header.classList.add("collapsed");
+  }
+}
+
+// ── TOGGLE EVIDENCE ──
+function toggleEvidence(id) {
+  const area = document.getElementById("ev-"+id);
+  const btn  = area.previousElementSibling;
+  if (area.style.display === "block") {
+    area.style.display = "none";
+    btn.innerHTML = "&#9654; Add evidence / notes";
+  } else {
+    area.style.display = "block";
+    btn.innerHTML = "&#9660; Evidence / notes";
+    area.querySelector("textarea").focus();
+  }
+}
+
+// ── COUNTS + PROGRESS ──
+function updateCounts() {
+  let met=0, prog=0, needs=0, ns=0;
+  ALL_ITEMS.forEach(item => {
+    const v = parseInt(document.getElementById("sel-"+item.id).value||"0");
+    if      (v===0) ns++;
+    else if (v===1) needs++;
+    else if (v===2) prog++;
+    else            met++;
+  });
+  document.getElementById("cnt-met").textContent   = met;
+  document.getElementById("cnt-prog").textContent  = prog;
+  document.getElementById("cnt-needs").textContent = needs;
+  document.getElementById("cnt-ns").textContent    = ns;
+
+  const pct = Math.round((met + prog * 0.5) / TOTAL * 100);
+  document.getElementById("overall-pct").textContent = pct + "%";
+  document.getElementById("overall-bar").style.width = pct + "%";
+}
+
+function updateSectionProgress() {
+  document.querySelectorAll(".sec-pct").forEach(span => {
+    const ids = span.dataset.ids.split(",");
+    let score = 0;
+    ids.forEach(id => {
+      const v = parseInt(document.getElementById("sel-"+id)?.value||"0");
+      score += (v >= 3 ? 1 : v === 2 ? 0.5 : 0);
+    });
+    const pct = Math.round(score / ids.length * 100);
+    span.textContent = pct + "%";
+    span.closest(".sec-prog").querySelector(".mini-bar-fill").style.width = pct + "%";
+  });
+}
+
+let saveTimer;
+function showSaveNote() {
+  const n = document.getElementById("save-note");
+  n.textContent = "Saved ✓";
+  n.style.color = "var(--green)";
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    n.textContent = "Changes are saved automatically in your browser.";
+    n.style.color = "";
+  }, 2000);
+}
+
+// ── INIT ──
+document.getElementById("today").textContent = new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"long",year:"numeric"});
+updateCounts();
+updateSectionProgress();
+</script>
+</body>
+</html>
