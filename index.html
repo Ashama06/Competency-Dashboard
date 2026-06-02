@@ -451,9 +451,12 @@
 <header>
   <div class="title-block">
     <h1>Non-Fee Earner — Senior</h1>
-    <p>Competency Tracker &nbsp;|&nbsp; <span id="user-name" contenteditable="true" spellcheck="false" title="Click to edit your name"></span> &nbsp;|&nbsp; <span id="today"></span></p>
+    <p>Competency Tracker &nbsp;|&nbsp; <span id="user-name" contenteditable="true" spellcheck="false" title="Click to edit your name"></span> &nbsp;|&nbsp; <span id="today"></span> &nbsp;|&nbsp; <span id="sync-status-tracker">Local Storage</span></p>
   </div>
-  <div class="badge">Savills Competency Framework</div>
+  <div style="display: flex; gap: 10px; align-items: center;">
+    <button style="background: #666; color: #fff; border: none; border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;" onclick="openTrackerSettingsModal()">⚙ Settings</button>
+    <div class="badge">Savills Competency Framework</div>
+  </div>
 </header>
 
 <!-- Rating scale legend -->
@@ -500,6 +503,7 @@
 
 <button class="share-btn" onclick="openExportModal()">&#128279; Share with Manager</button>
 <button class="print-btn" onclick="window.print()">&#128438; Print / Save PDF</button>
+<button class="share-btn" style="right: 400px; background: var(--gold);" onclick="updateManagerDashboard()">📤 Update Manager</button>
 
 <div class="modal-overlay" id="export-modal">
   <div class="modal-box">
@@ -514,7 +518,126 @@
   </div>
 </div>
 
+<!-- Settings Modal for Tracker -->
+<div class="modal-overlay" id="tracker-settings-modal">
+  <div class="modal-box" style="width: 620px;">
+    <h3>SharePoint Configuration</h3>
+    <p>Enter your SharePoint site URL to auto-sync your ratings with your manager. Format: <code style="background:#f0f0f0; padding:2px 6px;">https://company.sharepoint.com/sites/YourSite</code></p>
+    <div style="margin: 14px 0;">
+      <label style="display: block; font-size: 12px; font-weight: 600; color: var(--navy); margin-bottom: 6px;">SharePoint Site URL</label>
+      <input type="text" id="tracker-sharepoint-url" placeholder="https://company.sharepoint.com/sites/YourSite" style="width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px;">
+    </div>
+    <div style="margin: 14px 0;">
+      <label style="display: block; font-size: 12px; font-weight: 600; color: var(--navy); margin-bottom: 6px;">Document Library Name</label>
+      <input type="text" id="tracker-library-name" placeholder="Shared Documents" style="width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px;" value="Shared Documents">
+    </div>
+    <div style="margin: 14px 0;">
+      <label style="display: block; font-size: 12px; font-weight: 600; color: var(--navy); margin-bottom: 6px;">Folder Name (in library)</label>
+      <input type="text" id="tracker-folder-name" placeholder="Competency Data" style="width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px;" value="Competency Data">
+    </div>
+    <div style="padding: 10px; background: #f9fafb; border-radius: 6px; font-size: 12px; color: var(--mid); margin: 14px 0;">
+      ℹ️ <strong>Note:</strong> Your changes will be automatically uploaded to SharePoint. Use the same settings as your manager for seamless sync.
+    </div>
+    <div class="modal-error" id="tracker-settings-error"></div>
+    <div class="modal-actions">
+      <button onclick="closeTrackerSettingsModal()">Cancel</button>
+      <button class="primary" onclick="saveTrackerSharePointConfig()">Save Configuration</button>
+    </div>
+  </div>
+</div>
+
 <script>
+// ── SHAREPOINT CONFIGURATION FOR TRACKER ──
+const TRACKER_SP_CONFIG_KEY = 'savills_tracker_sp_config';
+let trackerSpConfig = null;
+let trackerUseSharePoint = false;
+
+function getTrackerSharePointConfig() {
+  try {
+    return JSON.parse(localStorage.getItem(TRACKER_SP_CONFIG_KEY) || 'null');
+  } catch(e) {
+    return null;
+  }
+}
+
+function saveTrackerSharePointConfigLocal(config) {
+  try {
+    localStorage.setItem(TRACKER_SP_CONFIG_KEY, JSON.stringify(config));
+  } catch(e) {}
+}
+
+function buildTrackerSharePointUploadUrl(filename) {
+  if (!trackerSpConfig) return null;
+  const { siteUrl, libraryName, folderName } = trackerSpConfig;
+  const encodedFolder = folderName.replace(/\s+/g, '%20');
+  const siteName = siteUrl.split('/sites/')[1];
+  return `${siteUrl}/_api/web/GetFolderByServerRelativeUrl('/sites/${siteName}/${libraryName}/${encodedFolder}')/Files/add(url='${filename}',overwrite=true)`;
+}
+
+async function uploadTrackerToSharePoint(filename, data) {
+  if (!trackerUseSharePoint) return false;
+  try {
+    const url = buildTrackerSharePointUploadUrl(filename);
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      credentials: 'include'
+    });
+    return response.ok;
+  } catch(e) {
+    console.error('SharePoint upload failed:', e);
+    return false;
+  }
+}
+
+function openTrackerSettingsModal() {
+  trackerSpConfig = getTrackerSharePointConfig();
+  if (trackerSpConfig) {
+    document.getElementById('tracker-sharepoint-url').value = trackerSpConfig.siteUrl || '';
+    document.getElementById('tracker-library-name').value = trackerSpConfig.libraryName || 'Shared Documents';
+    document.getElementById('tracker-folder-name').value = trackerSpConfig.folderName || 'Competency Data';
+  }
+  document.getElementById('tracker-settings-error').textContent = '';
+  document.getElementById('tracker-settings-modal').classList.add('open');
+}
+
+function closeTrackerSettingsModal() {
+  document.getElementById('tracker-settings-modal').classList.remove('open');
+}
+
+function saveTrackerSharePointConfig() {
+  const siteUrl = document.getElementById('tracker-sharepoint-url').value.trim();
+  const libraryName = document.getElementById('tracker-library-name').value.trim() || 'Shared Documents';
+  const folderName = document.getElementById('tracker-folder-name').value.trim() || 'Competency Data';
+  const errorDiv = document.getElementById('tracker-settings-error');
+
+  if (!siteUrl) {
+    errorDiv.textContent = 'Please enter a SharePoint site URL';
+    return;
+  }
+
+  if (!siteUrl.includes('sharepoint.com')) {
+    errorDiv.textContent = 'Invalid SharePoint URL. Must contain "sharepoint.com"';
+    return;
+  }
+
+  trackerSpConfig = { siteUrl, libraryName, folderName };
+  saveTrackerSharePointConfigLocal(trackerSpConfig);
+  trackerUseSharePoint = true;
+
+  errorDiv.textContent = '';
+  errorDiv.style.color = 'var(--green)';
+  errorDiv.textContent = '✓ Configuration saved!';
+  
+  document.getElementById('sync-status-tracker').textContent = 'SharePoint Connected';
+  document.getElementById('sync-status-tracker').style.color = 'var(--green)';
+
+  setTimeout(() => {
+    closeTrackerSettingsModal();
+  }, 1500);
+}
+
 const SECTIONS = [
   {
     id: "listen",
@@ -830,7 +953,18 @@ document.getElementById("today").textContent = new Date().toLocaleDateString("en
 
 const nameEl = document.getElementById("user-name");
 nameEl.textContent = load("username", "");
-nameEl.addEventListener("input", () => { save("username", nameEl.textContent.trim()); });
+nameEl.addEventListener("input", () => { 
+  save("username", nameEl.textContent.trim());
+  showSaveNote();
+});
+
+// Check for SharePoint config
+trackerSpConfig = getTrackerSharePointConfig();
+if (trackerSpConfig && trackerSpConfig.siteUrl) {
+  trackerUseSharePoint = true;
+  document.getElementById('sync-status-tracker').textContent = 'SharePoint Connected';
+  document.getElementById('sync-status-tracker').style.color = 'var(--green)';
+}
 
 updateCounts();
 updateSectionProgress();
@@ -840,7 +974,8 @@ const ALL_IDS = ['rs1','rs2','wo1','wo2','wo3','wo4','wo5','wo6',
                  'dr1','mi1','mi2','mi3','ci1',
                  'nw1','nw2','kh1','kh2','kh3','kh4','kh5','kh6','kh7','kh8'];
 
-function openExportModal() {
+// Generate and broadcast export code whenever tracker data changes
+function generateExportCode() {
   const ratings = {};
   ALL_IDS.forEach(id => {
     const sel = document.getElementById('sel-'+id);
@@ -852,7 +987,65 @@ function openExportModal() {
     exported: new Date().toISOString().split('T')[0],
     ratings
   };
-  const code = 'SAVILLS-SENIOR-V2:' + btoa(encodeURIComponent(JSON.stringify(data)));
+  return 'SAVILLS-SENIOR-V2:' + btoa(encodeURIComponent(JSON.stringify(data)));
+}
+
+// Broadcast update signal to Manager Dashboard via localStorage
+function broadcastUpdate() {
+  const userData = document.getElementById('user-name').textContent.trim() || 'Unknown';
+  const exportKey = 'savills_auto_export_' + userData.replace(/\s+/g, '_').toLowerCase();
+  const code = generateExportCode();
+  try {
+    localStorage.setItem(exportKey, code);
+    localStorage.setItem('savills_last_broadcast', new Date().toISOString());
+  } catch(e) {}
+}
+
+// Manually update manager - uploads to SharePoint and broadcasts
+async function updateManagerDashboard() {
+  const userName = document.getElementById('user-name').textContent.trim();
+  if (!userName) {
+    alert('Please enter your name first');
+    return;
+  }
+
+  if (!trackerUseSharePoint || !trackerSpConfig) {
+    alert('SharePoint not configured. Please go to Settings first.');
+    return;
+  }
+
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = '⏳ Updating...';
+
+  try {
+    const exportData = JSON.parse(decodeURIComponent(atob(generateExportCode().slice(18))));
+    const filename = 'tracker_' + userName.replace(/\s+/g, '_').toLowerCase() + '.json';
+    const uploaded = await uploadTrackerToSharePoint(filename, exportData);
+
+    if (uploaded) {
+      // Broadcast to localStorage listeners
+      broadcastUpdate();
+      
+      btn.style.background = 'var(--green)';
+      btn.textContent = '✓ Manager Updated!';
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.style.background = '';
+        btn.textContent = '📤 Update Manager';
+      }, 2000);
+    } else {
+      throw new Error('Upload failed');
+    }
+  } catch(e) {
+    alert('Failed to update manager. Check your SharePoint configuration.');
+    btn.disabled = false;
+    btn.textContent = '📤 Update Manager';
+  }
+}
+
+function openExportModal() {
+  const code = generateExportCode();
   document.getElementById('export-code-area').value = code;
   document.getElementById('copy-confirm').textContent = '';
   document.getElementById('export-modal').classList.add('open');
