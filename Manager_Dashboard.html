@@ -148,7 +148,13 @@
   }
   tbody tr.emp-row:hover { background: #f7f9fd; }
   tbody tr.emp-row.expanded { background: #f0f5ff; }
+  tbody tr.emp-row.just-updated { animation: highlight-update 2s ease-out; }
   tbody tr.emp-row:last-child { border-bottom: none; }
+
+  @keyframes highlight-update {
+    0% { background: #fff3cd; box-shadow: inset 0 0 10px rgba(184, 151, 46, 0.3); }
+    100% { background: transparent; box-shadow: none; }
+  }
 
   tbody td { padding: 12px 14px; font-size: 13px; vertical-align: middle; }
 
@@ -339,9 +345,12 @@
 <header>
   <div>
     <h1>Manager Overview — Non-Fee Earner Senior</h1>
-    <p>Savills Competency Framework &nbsp;|&nbsp; <span id="today"></span></p>
+    <p>Savills Competency Framework &nbsp;|&nbsp; <span id="today"></span> &nbsp;|&nbsp; <span id="sync-status">Local Storage</span></p>
   </div>
-  <button class="add-btn" onclick="openAddModal()">+ Add Team Member</button>
+  <div style="display: flex; gap: 10px;">
+    <button class="add-btn" onclick="openSettingsModal()" style="background: #666; padding: 8px 14px; font-size: 12px;">⚙ Settings</button>
+    <button class="add-btn" onclick="openAddModal()">+ Add Team Member</button>
+  </div>
 </header>
 
 <div class="legend">
@@ -416,7 +425,150 @@
   </div>
 </div>
 
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal-box" style="width: 620px;">
+    <h3>SharePoint Configuration</h3>
+    <p>Enter your SharePoint site URL to sync data across devices. Format: <code style="background:#f0f0f0; padding:2px 6px;">https://company.sharepoint.com/sites/YourSite</code></p>
+    <div style="margin: 14px 0;">
+      <label style="display: block; font-size: 12px; font-weight: 600; color: var(--navy); margin-bottom: 6px;">SharePoint Site URL</label>
+      <input type="text" id="sharepoint-url" placeholder="https://company.sharepoint.com/sites/YourSite" style="width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px;">
+    </div>
+    <div style="margin: 14px 0;">
+      <label style="display: block; font-size: 12px; font-weight: 600; color: var(--navy); margin-bottom: 6px;">Document Library Name</label>
+      <input type="text" id="library-name" placeholder="Shared Documents" style="width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px;" value="Shared Documents">
+    </div>
+    <div style="margin: 14px 0;">
+      <label style="display: block; font-size: 12px; font-weight: 600; color: var(--navy); margin-bottom: 6px;">Folder Name (in library)</label>
+      <input type="text" id="folder-name" placeholder="Competency Data" style="width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px;" value="Competency Data">
+    </div>
+    <div style="padding: 10px; background: #f9fafb; border-radius: 6px; font-size: 12px; color: var(--mid); margin: 14px 0;">
+      ℹ️ <strong>Note:</strong> You'll use your organization account to authenticate with SharePoint. Once configured, all team member data will sync automatically across devices.
+    </div>
+    <div class="modal-error" id="settings-error"></div>
+    <div class="modal-actions">
+      <button onclick="closeSettingsModal()">Cancel</button>
+      <button class="primary" onclick="testAndSaveSharePointConfig()">Test & Save Configuration</button>
+    </div>
+  </div>
+</div>
+
 <script>
+// ── SHAREPOINT CONFIGURATION ──
+const SHAREPOINT_CONFIG_KEY = 'savills_sharepoint_config';
+let spConfig = null;
+let useSharePoint = false;
+
+function getSharePointConfig() {
+  try {
+    return JSON.parse(localStorage.getItem(SHAREPOINT_CONFIG_KEY) || 'null');
+  } catch(e) {
+    return null;
+  }
+}
+
+function saveSharePointConfig(config) {
+  try {
+    localStorage.setItem(SHAREPOINT_CONFIG_KEY, JSON.stringify(config));
+  } catch(e) {}
+}
+
+function buildSharePointFileUrl(filename) {
+  if (!spConfig) return null;
+  const { siteUrl, libraryName, folderName } = spConfig;
+  const encodedFolder = folderName.replace(/\s+/g, '%20');
+  return `${siteUrl}/_api/web/GetFileByServerRelativeUrl('/sites/${siteUrl.split('/sites/')[1]}/${libraryName}/${encodedFolder}/${filename}')/$value`;
+}
+
+function buildSharePointUploadUrl(filename) {
+  if (!spConfig) return null;
+  const { siteUrl, libraryName, folderName } = spConfig;
+  const encodedFolder = folderName.replace(/\s+/g, '%20');
+  const siteName = siteUrl.split('/sites/')[1];
+  return `${siteUrl}/_api/web/GetFolderByServerRelativeUrl('/sites/${siteName}/${libraryName}/${encodedFolder}')/Files/add(url='${filename}',overwrite=true)`;
+}
+
+async function uploadToSharePoint(filename, data) {
+  if (!useSharePoint) return false;
+  try {
+    const url = buildSharePointUploadUrl(filename);
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      credentials: 'include'
+    });
+    return response.ok;
+  } catch(e) {
+    console.error('SharePoint upload failed:', e);
+    return false;
+  }
+}
+
+async function downloadFromSharePoint(filename) {
+  if (!useSharePoint) return null;
+  try {
+    const url = buildSharePointFileUrl(filename);
+    const response = await fetch(url, {
+      method: 'GET',
+      credentials: 'include'
+    });
+    if (response.ok) return await response.json();
+  } catch(e) {
+    console.error('SharePoint download failed:', e);
+  }
+  return null;
+}
+
+function openSettingsModal() {
+  spConfig = getSharePointConfig();
+  if (spConfig) {
+    document.getElementById('sharepoint-url').value = spConfig.siteUrl || '';
+    document.getElementById('library-name').value = spConfig.libraryName || 'Shared Documents';
+    document.getElementById('folder-name').value = spConfig.folderName || 'Competency Data';
+  }
+  document.getElementById('settings-error').textContent = '';
+  document.getElementById('settings-modal').classList.add('open');
+}
+
+function closeSettingsModal() {
+  document.getElementById('settings-modal').classList.remove('open');
+}
+
+async function testAndSaveSharePointConfig() {
+  const siteUrl = document.getElementById('sharepoint-url').value.trim();
+  const libraryName = document.getElementById('library-name').value.trim() || 'Shared Documents';
+  const folderName = document.getElementById('folder-name').value.trim() || 'Competency Data';
+  const errorDiv = document.getElementById('settings-error');
+
+  if (!siteUrl) {
+    errorDiv.textContent = 'Please enter a SharePoint site URL';
+    return;
+  }
+
+  if (!siteUrl.includes('sharepoint.com')) {
+    errorDiv.textContent = 'Invalid SharePoint URL. Must contain "sharepoint.com"';
+    return;
+  }
+
+  // Validate and save
+  spConfig = { siteUrl, libraryName, folderName };
+  saveSharePointConfig(spConfig);
+  useSharePoint = true;
+
+  errorDiv.textContent = '';
+  errorDiv.style.color = 'var(--green)';
+  errorDiv.textContent = '✓ Configuration saved! (Note: Test sync will work when uploading employee data)';
+  
+  document.getElementById('sync-status').textContent = 'SharePoint Connected';
+  document.getElementById('sync-status').style.color = 'var(--green)';
+
+  setTimeout(() => {
+    closeSettingsModal();
+    refresh();
+  }, 1500);
+}
+
 // ── DATA DEFINITIONS ──
 const SECTION_IDS = {
   listen:    ['rs1','rs2','wo1','wo2','wo3','wo4','wo5','wo6'],
@@ -474,12 +626,61 @@ let sortCol   = 'name';
 let sortAsc   = true;
 
 // ── PERSISTENCE ──
-function loadData() {
-  try { employees = JSON.parse(localStorage.getItem('savills_mgr_v2') || '[]'); } catch(e) { employees = []; }
+async function loadData() {
+  if (useSharePoint) {
+    try {
+      const data = await downloadFromSharePoint('dashboard_employees.json');
+      employees = data && Array.isArray(data) ? data : [];
+    } catch(e) {
+      employees = [];
+    }
+  } else {
+    try { employees = JSON.parse(localStorage.getItem('savills_mgr_v2') || '[]'); } catch(e) { employees = []; }
+  }
 }
-function saveData() {
-  try { localStorage.setItem('savills_mgr_v2', JSON.stringify(employees)); } catch(e) {}
+
+async function saveData() {
+  if (useSharePoint) {
+    await uploadToSharePoint('dashboard_employees.json', employees);
+  } else {
+    try { localStorage.setItem('savills_mgr_v2', JSON.stringify(employees)); } catch(e) {}
+  }
 }
+
+// ── AUTO-UPDATE FROM COMPETENCY TRACKER ──
+function autoUpdateFromTracker() {
+  let updated = false;
+  employees.forEach(emp => {
+    const exportKey = 'savills_auto_export_' + emp.name.replace(/\s+/g, '_').toLowerCase();
+    try {
+      const code = localStorage.getItem(exportKey);
+      if (code) {
+        const data = parseCode(code);
+        if (data && data.exported !== emp.exported) {
+          emp.exported = data.exported;
+          emp.ratings = data.ratings;
+          updated = true;
+          // Show update notification
+          const row = document.querySelector(`tr.emp-row[data-emp="${emp.id}"]`);
+          if (row) {
+            row.classList.add('just-updated');
+            setTimeout(() => row.classList.remove('just-updated'), 2000);
+          }
+        }
+      }
+    } catch(e) {}
+  });
+  if (updated) {
+    saveData().then(() => refresh());
+  }
+}
+
+// Listen for updates from Competency Tracker (only when employee clicks "Update Manager")
+window.addEventListener('storage', (event) => {
+  if (event.key && event.key.startsWith('savills_auto_export_')) {
+    autoUpdateFromTracker();
+  }
+});
 
 // ── PARSE EXPORT CODE ──
 function parseCode(code) {
@@ -688,17 +889,17 @@ function addEmployee() {
     employees.push(emp);
   }
 
-  saveData();
-  closeAddModal();
-  refresh();
+  saveData().then(() => {
+    closeAddModal();
+    refresh();
+  });
 }
 
 // ── REMOVE EMPLOYEE ──
 function removeEmployee(empId) {
   if (!confirm('Remove this team member from the dashboard?')) return;
   employees = employees.filter(e => e.id !== empId);
-  saveData();
-  refresh();
+  saveData().then(() => refresh());
 }
 
 // ── REFRESH ──
@@ -712,8 +913,19 @@ function refresh() {
 
 // ── INIT ──
 document.getElementById('today').textContent = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
-loadData();
-refresh();
+
+// Check for SharePoint config
+spConfig = getSharePointConfig();
+if (spConfig && spConfig.siteUrl) {
+  useSharePoint = true;
+  document.getElementById('sync-status').textContent = 'SharePoint Connected';
+  document.getElementById('sync-status').style.color = 'var(--green)';
+}
+
+// Load data and refresh UI
+loadData().then(() => {
+  refresh();
+});
 </script>
 </body>
 </html>
