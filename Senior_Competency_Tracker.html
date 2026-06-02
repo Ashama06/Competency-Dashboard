@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Non-Fee Earner Senior — Competency Tracker</title>
+<style>
+  :root {
+    --navy:  #1a2f54;
+    --gold:  #b8972e;
+    --light-gold: #f5efe0;
+    --green: #2e7d52;
+    --amber: #c87d20;
+    --red:   #b83232;
+    --grey:  #f4f6f9;
+    --mid:   #6b7a93;
+    --border:#d0d8e8;
+
+    --listen:    #1a5276;
+    --empower:   #145a32;
+    --challenge: #7d3c00;
+    --collab:    #4a235a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: var(--grey);
+    color: #2a2a2a;
+    font-size: 14px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--navy);
+    color: #fff;
+    padding: 28px 40px 24px;
+    display: flex;
+    align-items: flex-end;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  header .title-block h1 { font-size: 22px; font-weight: 700; letter-spacing: .5px; }
+  header .title-block p  { font-size: 13px; color: #aab8cc; margin-top: 4px; }
+  header .badge {
+    margin-left: auto;
+    background: var(--gold);
+    color: #fff;
+    border-radius: 20px;
+    padding: 6px 18px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  #user-name {
+    display: inline-block;
+    min-width: 140px;
+    border-bottom: 1px dashed rgba(255,255,255,.4);
+    padding: 1px 4px;
+    color: #fff;
+    cursor: text;
+    border-radius: 2px;
+    transition: background .2s;
+  }
+  #user-name:hover, #user-name:focus {
+    background: rgba(255,255,255,.1);
+    outline: none;
+    border-bottom-color: var(--gold);
+  }
+  #user-name:empty::before {
+    content: "Click to enter your name";
+    color: rgba(255,255,255,.4);
+    font-style: italic;
+  }
+
+  /* ── RATING LEGEND ── */
+  .rating-legend {
+    display: flex;
+    gap: 0;
+    padding: 0 40px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .rl-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    flex: 1;
+    min-width: 150px;
+  }
+  .rl-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .rl-num.r1 { background: var(--red); }
+  .rl-num.r2 { background: var(--amber); }
+  .rl-num.r3 { background: var(--green); }
+  .rl-num.r4 { background: var(--navy); }
+  .rl-text strong { display: block; font-size: 12px; color: #333; }
+  .rl-text span   { font-size: 11px; color: var(--mid); }
+
+  /* ── SUMMARY ── */
+  .summary-bar {
+    display: flex;
+    gap: 12px;
+    padding: 20px 40px 0;
+    flex-wrap: wrap;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 20px;
+    flex: 1;
+    min-width: 120px;
+    text-align: center;
+  }
+  .card .num { font-size: 30px; font-weight: 700; color: var(--navy); line-height: 1; }
+  .card .lbl { font-size: 11px; color: var(--mid); margin-top: 4px; text-transform: uppercase; letter-spacing: .5px; }
+  .card.r1 .num { color: var(--red);   }
+  .card.r2 .num { color: var(--amber); }
+  .card.r3 .num { color: var(--green); }
+  .card.r4 .num { color: var(--navy);  }
+
+  /* overall bar */
+  .overall-wrap { padding: 16px 40px 0; }
+  .overall-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--mid);
+    margin-bottom: 6px;
+  }
+  .overall-label strong { color: var(--navy); font-size: 14px; }
+  .bar-track {
+    height: 12px;
+    background: var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--navy), #2e5fa3);
+    border-radius: 6px;
+    transition: width .6s ease;
+  }
+
+  .save-note {
+    text-align: right;
+    padding: 6px 40px 0;
+    font-size: 11px;
+    color: var(--mid);
+  }
+
+  /* ── MAIN ── */
+  main { padding: 24px 40px 80px; }
+
+  .section {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+
+  /* DNA colour bands */
+  .section[data-dna="listen"]    .section-header { background: var(--listen); }
+  .section[data-dna="empower"]   .section-header { background: var(--empower); }
+  .section[data-dna="challenge"] .section-header { background: var(--challenge); }
+  .section[data-dna="collab"]    .section-header { background: var(--collab); }
+
+  .section[data-dna="listen"]    .dna-card { border-left: 4px solid var(--listen);    background: #eaf0f8; }
+  .section[data-dna="empower"]   .dna-card { border-left: 4px solid var(--empower);   background: #eaf5ee; }
+  .section[data-dna="challenge"] .dna-card { border-left: 4px solid var(--challenge); background: #fdf3e8; }
+  .section[data-dna="collab"]    .dna-card { border-left: 4px solid var(--collab);    background: #f5eef8; }
+
+  .section[data-dna="listen"]    .sub-label { color: var(--listen); }
+  .section[data-dna="empower"]   .sub-label { color: var(--empower); }
+  .section[data-dna="challenge"] .sub-label { color: var(--challenge); }
+  .section[data-dna="collab"]    .sub-label { color: var(--collab); }
+
+  .section-header {
+    color: #fff;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+  }
+  .section-header .hdr-left { display: flex; align-items: center; gap: 12px; }
+  .section-header h2 { font-size: 15px; font-weight: 700; letter-spacing: .5px; }
+  .section-header .dna-label { font-size: 11px; opacity: .7; font-style: italic; }
+  .section-header .sec-prog {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+  }
+  .mini-bar-track {
+    width: 90px;
+    height: 6px;
+    background: rgba(255,255,255,.25);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .mini-bar-fill {
+    height: 100%;
+    background: rgba(255,255,255,.8);
+    border-radius: 3px;
+    transition: width .4s ease;
+  }
+  .toggle-icon { font-size: 16px; transition: transform .3s; margin-left: 10px; }
+  .section-header.collapsed .toggle-icon { transform: rotate(-90deg); }
+
+  .section-body { display: block; }
+  .section-body.hidden { display: none; }
+
+  /* DNA description card */
+  .dna-card {
+    padding: 12px 20px;
+    font-size: 13px;
+    color: #444;
+    line-height: 1.5;
+    border-bottom: 1px solid var(--border);
+  }
+  .dna-card strong { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; opacity: .8; }
+
+  /* sub-heading */
+  .sub-label {
+    background: var(--light-gold);
+    border-bottom: 1px solid var(--border);
+    border-top: 1px solid var(--border);
+    padding: 7px 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+  }
+  .sub-label .sub-desc { font-weight: 400; font-style: italic; text-transform: none; opacity: .8; margin-left: 6px; letter-spacing: 0; }
+
+  /* ── COMPETENCY ROW ── */
+  .comp-row {
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+  }
+  .comp-row:last-child { border-bottom: none; }
+  .comp-row.na-row { background: #fafafa; }
+
+  .comp-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .comp-text {
+    flex: 1;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: #2a2a2a;
+  }
+  .comp-text em {
+    display: block;
+    font-style: normal;
+    font-size: 11px;
+    color: var(--mid);
+    margin-top: 2px;
+  }
+  .na-text { color: var(--mid); font-style: italic; }
+
+  .status-select {
+    min-width: 170px;
+    padding: 6px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7a93'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-color: #f9fafb;
+    padding-right: 28px;
+    cursor: pointer;
+    transition: border-color .2s;
+  }
+  .status-select:focus { outline: none; border-color: var(--navy); }
+  .status-select[data-v="0"] { color: var(--mid);   border-color: var(--border); background-color: #f9fafb; }
+  .status-select[data-v="1"] { color: var(--red);   border-color: #f0cccc; background-color: #fff8f8; }
+  .status-select[data-v="2"] { color: var(--amber); border-color: #f5dec8; background-color: #fffbf5; }
+  .status-select[data-v="3"] { color: var(--green); border-color: #c2e0d0; background-color: #f5fdf8; }
+  .status-select[data-v="4"] { color: var(--navy);  border-color: #b8ccee; background-color: #f0f5ff; }
+
+  /* status dot */
+  .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 5px;
+  }
+  .dot-0 { background: #ccc; }
+  .dot-1 { background: var(--red); }
+  .dot-2 { background: var(--amber); }
+  .dot-3 { background: var(--green); }
+  .dot-4 { background: var(--navy); }
+
+  /* evidence */
+  .evidence-toggle {
+    font-size: 11px;
+    color: var(--mid);
+    cursor: pointer;
+    margin-top: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: none;
+    background: none;
+    padding: 0;
+  }
+  .evidence-toggle:hover { color: var(--navy); }
+  .evidence-area { display: none; margin-top: 8px; }
+  .evidence-area textarea {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 70px;
+    color: #333;
+  }
+  .evidence-area textarea:focus { outline: none; border-color: var(--navy); }
+  .evidence-area textarea::placeholder { color: #bbb; }
+
+  /* print btn */
+  .print-btn {
+    position: fixed;
+    bottom: 28px;
+    right: 32px;
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(26,47,84,.35);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 100;
+    transition: background .2s;
+  }
+  .print-btn:hover { background: #243f72; }
+
+  .share-btn {
+    position: fixed;
+    bottom: 28px;
+    right: 210px;
+    background: var(--gold);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(184,151,46,.4);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 100;
+    transition: background .2s;
+  }
+  .share-btn:hover { background: #a07e20; }
+
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: #fff;
+    border-radius: 12px;
+    padding: 28px 32px;
+    width: 520px;
+    max-width: 95vw;
+    box-shadow: 0 8px 32px rgba(0,0,0,.2);
+  }
+  .modal-box h3 { font-size: 16px; color: var(--navy); margin-bottom: 6px; }
+  .modal-box p  { font-size: 13px; color: var(--mid); margin-bottom: 14px; line-height: 1.5; }
+  .modal-box textarea {
+    width: 100%;
+    height: 90px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 11px;
+    resize: none;
+    color: #333;
+    background: #f9fafb;
+  }
+  .modal-actions { display: flex; gap: 10px; margin-top: 14px; justify-content: flex-end; }
+  .modal-actions button {
+    padding: 9px 20px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid var(--border);
+    background: #fff;
+    color: var(--navy);
+    transition: background .2s;
+  }
+  .modal-actions button:hover { background: var(--grey); }
+  .modal-actions button.primary { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .modal-actions button.primary:hover { background: #243f72; }
+  .copy-confirm { font-size: 12px; color: var(--green); margin-top: 6px; min-height: 18px; text-align: right; }
+
+  @media print {
+    .print-btn, .evidence-toggle { display: none !important; }
+    .evidence-area { display: block !important; }
+    .section-body.hidden { display: block !important; }
+    .section-header, .dna-card, .sub-label {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title-block">
+    <h1>Non-Fee Earner — Senior</h1>
+    <p>Competency Tracker &nbsp;|&nbsp; <span id="user-name" contenteditable="true" spellcheck="false" title="Click to edit your name"></span> &nbsp;|&nbsp; <span id="today"></span> &nbsp;|&nbsp; <span id="sync-status-tracker">Local Storage</span></p>
+  </div>
+  <div style="display: flex; gap: 10px; align-items: center;">
+    <button style="background: #666; color: #fff; border: none; border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;" onclick="openTrackerSettingsModal()">⚙ Settings</button>
+    <div class="badge">Savills Competency Framework</div>
+  </div>
+</header>
+
+<!-- Rating scale legend -->
+<div class="rating-legend">
+  <div class="rl-item">
+    <div class="rl-num r1">1</div>
+    <div class="rl-text"><strong>Improvement Required</strong><span>Performance below standard</span></div>
+  </div>
+  <div class="rl-item">
+    <div class="rl-num r2">2</div>
+    <div class="rl-text"><strong>Development Required</strong><span>Partially met expectations</span></div>
+  </div>
+  <div class="rl-item">
+    <div class="rl-num r3">3</div>
+    <div class="rl-text"><strong>Performing</strong><span>Met expectations for role &amp; grade</span></div>
+  </div>
+  <div class="rl-item">
+    <div class="rl-num r4">4</div>
+    <div class="rl-text"><strong>High Performing</strong><span>Significantly &amp; consistently exceeding</span></div>
+  </div>
+</div>
+
+<!-- Overall progress -->
+<div class="overall-wrap">
+  <div class="overall-label">
+    <strong>Overall progress</strong>
+    <span id="overall-pct">0%</span>
+  </div>
+  <div class="bar-track"><div class="bar-fill" id="overall-bar" style="width:0%"></div></div>
+</div>
+
+<!-- Summary cards -->
+<div class="summary-bar">
+  <div class="card"><div class="num" id="cnt-total">0</div><div class="lbl">Total Items</div></div>
+  <div class="card r3"><div class="num" id="cnt-high">0</div><div class="lbl">Performing / High</div></div>
+  <div class="card r2"><div class="num" id="cnt-dev">0</div><div class="lbl">Development Needed</div></div>
+  <div class="card r1"><div class="num" id="cnt-imp">0</div><div class="lbl">Improvement Needed</div></div>
+  <div class="card"><div class="num" id="cnt-ns">0</div><div class="lbl">Not Yet Rated</div></div>
+</div>
+
+<div class="save-note" id="save-note">Changes are saved automatically in your browser.</div>
+
+<main id="main"></main>
+
+<button class="share-btn" onclick="openExportModal()">&#128279; Share with Manager</button>
+<button class="print-btn" onclick="window.print()">&#128438; Print / Save PDF</button>
+<button class="share-btn" style="right: 400px; background: var(--gold);" onclick="updateManagerDashboard()">📤 Update Manager</button>
+
+<div class="modal-overlay" id="export-modal">
+  <div class="modal-box">
+    <h3>Share with Manager</h3>
+    <p>Copy the code below and send it to your manager. They paste it into the Manager Dashboard to see your ratings. Reshare whenever you update your ratings.</p>
+    <textarea id="export-code-area" readonly></textarea>
+    <div class="copy-confirm" id="copy-confirm"></div>
+    <div class="modal-actions">
+      <button onclick="closeExportModal()">Close</button>
+      <button class="primary" onclick="copyExportCode()">&#128203; Copy Code</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal for Tracker -->
+<div class="modal-overlay" id="tracker-settings-modal">
+  <div class="modal-box" style="width: 620px;">
+    <h3>SharePoint Configuration</h3>
+    <p>Enter your SharePoint site URL to auto-sync your ratings with your manager. Format: <code style="background:#f0f0f0; padding:2px 6px;">https://company.sharepoint.com/sites/YourSite</code></p>
+    <div style="margin: 14px 0;">
+      <label style="display: block; font-size: 12px; font-weight: 600; color: var(--navy); margin-bottom: 6px;">SharePoint Site URL</label>
+      <input type="text" id="tracker-sharepoint-url" placeholder="https://company.sharepoint.com/sites/YourSite" style="width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px;">
+    </div>
+    <div style="margin: 14px 0;">
+      <label style="display: block; font-size: 12px; font-weight: 600; color: var(--navy); margin-bottom: 6px;">Document Library Name</label>
+      <input type="text" id="tracker-library-name" placeholder="Shared Documents" style="width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px;" value="Shared Documents">
+    </div>
+    <div style="margin: 14px 0;">
+      <label style="display: block; font-size: 12px; font-weight: 600; color: var(--navy); margin-bottom: 6px;">Folder Name (in library)</label>
+      <input type="text" id="tracker-folder-name" placeholder="Competency Data" style="width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px;" value="Competency Data">
+    </div>
+    <div style="padding: 10px; background: #f9fafb; border-radius: 6px; font-size: 12px; color: var(--mid); margin: 14px 0;">
+      ℹ️ <strong>Note:</strong> Your changes will be automatically uploaded to SharePoint. Use the same settings as your manager for seamless sync.
+    </div>
+    <div class="modal-error" id="tracker-settings-error"></div>
+    <div class="modal-actions">
+      <button onclick="closeTrackerSettingsModal()">Cancel</button>
+      <button class="primary" onclick="saveTrackerSharePointConfig()">Save Configuration</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── SHAREPOINT CONFIGURATION FOR TRACKER ──
+const TRACKER_SP_CONFIG_KEY = 'savills_tracker_sp_config';
+let trackerSpConfig = null;
+let trackerUseSharePoint = false;
+
+function getTrackerSharePointConfig() {
+  try {
+    return JSON.parse(localStorage.getItem(TRACKER_SP_CONFIG_KEY) || 'null');
+  } catch(e) {
+    return null;
+  }
+}
+
+function saveTrackerSharePointConfigLocal(config) {
+  try {
+    localStorage.setItem(TRACKER_SP_CONFIG_KEY, JSON.stringify(config));
+  } catch(e) {}
+}
+
+function buildTrackerSharePointUploadUrl(filename) {
+  if (!trackerSpConfig) return null;
+  const { siteUrl, libraryName, folderName } = trackerSpConfig;
+  const encodedFolder = folderName.replace(/\s+/g, '%20');
+  const siteName = siteUrl.split('/sites/')[1];
+  return `${siteUrl}/_api/web/GetFolderByServerRelativeUrl('/sites/${siteName}/${libraryName}/${encodedFolder}')/Files/add(url='${filename}',overwrite=true)`;
+}
+
+async function uploadTrackerToSharePoint(filename, data) {
+  if (!trackerUseSharePoint) return false;
+  try {
+    const url = buildTrackerSharePointUploadUrl(filename);
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      credentials: 'include'
+    });
+    return response.ok;
+  } catch(e) {
+    console.error('SharePoint upload failed:', e);
+    return false;
+  }
+}
+
+function openTrackerSettingsModal() {
+  trackerSpConfig = getTrackerSharePointConfig();
+  if (trackerSpConfig) {
+    document.getElementById('tracker-sharepoint-url').value = trackerSpConfig.siteUrl || '';
+    document.getElementById('tracker-library-name').value = trackerSpConfig.libraryName || 'Shared Documents';
+    document.getElementById('tracker-folder-name').value = trackerSpConfig.folderName || 'Competency Data';
+  }
+  document.getElementById('tracker-settings-error').textContent = '';
+  document.getElementById('tracker-settings-modal').classList.add('open');
+}
+
+function closeTrackerSettingsModal() {
+  document.getElementById('tracker-settings-modal').classList.remove('open');
+}
+
+function saveTrackerSharePointConfig() {
+  const siteUrl = document.getElementById('tracker-sharepoint-url').value.trim();
+  const libraryName = document.getElementById('tracker-library-name').value.trim() || 'Shared Documents';
+  const folderName = document.getElementById('tracker-folder-name').value.trim() || 'Competency Data';
+  const errorDiv = document.getElementById('tracker-settings-error');
+
+  if (!siteUrl) {
+    errorDiv.textContent = 'Please enter a SharePoint site URL';
+    return;
+  }
+
+  if (!siteUrl.includes('sharepoint.com')) {
+    errorDiv.textContent = 'Invalid SharePoint URL. Must contain "sharepoint.com"';
+    return;
+  }
+
+  trackerSpConfig = { siteUrl, libraryName, folderName };
+  saveTrackerSharePointConfigLocal(trackerSpConfig);
+  trackerUseSharePoint = true;
+
+  errorDiv.textContent = '';
+  errorDiv.style.color = 'var(--green)';
+  errorDiv.textContent = '✓ Configuration saved!';
+  
+  document.getElementById('sync-status-tracker').textContent = 'SharePoint Connected';
+  document.getElementById('sync-status-tracker').style.color = 'var(--green)';
+
+  setTimeout(() => {
+    closeTrackerSettingsModal();
+  }, 1500);
+}
+
+const SECTIONS = [
+  {
+    id: "listen",
+    dna: "listen",
+    title: "WE LISTEN",
+    dnaDesc: "You put people at the heart of what you do, listening to their unique needs and responding with a personal touch to build relationships that last. If it matters to them, it matters to you.",
+    groups: [
+      {
+        sub: "Relationship, Client Management & Service",
+        desc: "internal and external client management and service",
+        items: [
+          { id:"rs1", text:"Has significant relationships with peers in other divisions." },
+          { id:"rs2", text:"Proactively deals with client requests, building rapport and managing expectations." }
+        ]
+      },
+      {
+        sub: "Working with Others",
+        desc: "peer communication and teamwork",
+        items: [
+          { id:"wo1", text:"Responds to feedback in a positive manner, quickly addressing and resolving any problems." },
+          { id:"wo2", text:"Actively listens to and takes account of others' views and opinions." },
+          { id:"wo3", text:"Demonstrates a willingness to help colleagues / the team in achieving objectives." },
+          { id:"wo4", text:"Recognises and praises the contribution made by others." },
+          { id:"wo5", text:"Shares information and own expertise with others and encourages teamwork." },
+          { id:"wo6", text:"Promotes an inclusive workplace." }
+        ]
+      }
+    ]
+  },
+  {
+    id: "empower",
+    dna: "empower",
+    title: "WE EMPOWER",
+    dnaDesc: "You are empowered to be bold, brave but always act responsibly. You remain at the forefront of your specialism, challenge industry conventions and bring new ideas to the table in order to progress.",
+    groups: [
+      {
+        sub: "Organisation and Effectiveness",
+        desc: "work performance, speed and attention to detail",
+        items: [
+          { id:"oe1", text:"Generates own workload — is not purely carrying out work for their line manager and delegates work as appropriate." },
+          { id:"oe2", text:"Has a high level of responsibility, which extends beyond the department." },
+          { id:"oe3", text:"Takes on additional responsibilities outside the core job role." },
+          { id:"oe4", text:"Learns from and shares different working styles and methods." }
+        ]
+      },
+      {
+        sub: "Gravitas and Impact",
+        desc: "personal presentation and communication skills",
+        items: [
+          { id:"gi1", text:"Understands own and others' communication and management style and preference." },
+          { id:"gi2", text:"Demonstrates a high level of personal standards and presentation." },
+          { id:"gi3", text:"Demonstrates competence at presenting internally to peers and team." }
+        ]
+      },
+      {
+        sub: "Leading Others",
+        desc: "leadership skills and effective team management",
+        items: [
+          { id:"lo1", text:"N/A — Leading Others is not applicable at Senior grade.", na: true }
+        ]
+      }
+    ]
+  },
+  {
+    id: "challenge",
+    dna: "challenge",
+    title: "WE CHALLENGE",
+    dnaDesc: "You are always open, honest and transparent in your views, constructively challenging your clients and your colleagues in pursuit of the best results.",
+    groups: [
+      {
+        sub: "Driving for Results",
+        desc: "sales and negotiation skills",
+        items: [
+          { id:"dr1", text:"Understands services offered by other, related divisions and the importance of cross-selling / referring external clients to other areas of the business." }
+        ]
+      },
+      {
+        sub: "Market Insight",
+        desc: "knowledge of market, economic and industry developments",
+        items: [
+          { id:"mi1", text:"Stays current on market, economic developments and legislation affecting client work and Savills." },
+          { id:"mi2", text:"Understands other areas of the property market and how they impact on own area of business." },
+          { id:"mi3", text:"Understands ESG and its impact on the market." }
+        ]
+      },
+      {
+        sub: "Continuous Improvement",
+        desc: "openness to and facilitation of improvements to business processes",
+        items: [
+          { id:"ci1", text:"Provides suggestions to the team for improving / enhancing business processes." }
+        ]
+      }
+    ]
+  },
+  {
+    id: "collab",
+    dna: "collab",
+    title: "WE COLLABORATE",
+    dnaDesc: "You get the right people in the room for every challenge, uniting diverse perspectives and expertise across Savills network to deliver the best outcomes.",
+    groups: [
+      {
+        sub: "Client Network",
+        desc: "growth of internal and external client networks",
+        items: [
+          { id:"nw1", text:"Understands the importance of exchanging information on clients with others within Savills." },
+          { id:"nw2", text:"Has a notable profile outside own division." }
+        ]
+      },
+      {
+        sub: "Savills Know-How (including technical know-how)",
+        desc: "knowledge of own role, division and Savills as a business",
+        items: [
+          { id:"kh1", text:"Can explain how own job contributes to the day-to-day operation of the team." },
+          { id:"kh2", text:"Demonstrates an understanding of Savills objectives and overall strategy needed to attain these goals, including sustainability and diversity & inclusion objectives." },
+          { id:"kh3", text:"Understands the services that Savills provides to clients." },
+          { id:"kh4", text:"Understands Savills financial performance." },
+          { id:"kh5", text:"Demonstrates intermediate to advanced capability in all Microsoft packages used within Savills.", hint:"e.g. Word, Excel, PowerPoint, Outlook, Teams" },
+          { id:"kh6", text:"Demonstrates intermediate to advanced capability in Savills IT Systems.", hint:"e.g. Reapit / Dynamics / Concur (as appropriate), My HR" },
+          { id:"kh7", text:"Demonstrates intermediate to advanced capability in Invoicing (purchase and client)." },
+          { id:"kh8", text:"Typing skills — speed and accuracy." }
+        ]
+      }
+    ]
+  }
+];
+
+// flat list of all rateable items
+const ALL_ITEMS = SECTIONS.flatMap(s =>
+  s.groups.flatMap(g => g.items.filter(i => !i.na))
+);
+const TOTAL = ALL_ITEMS.length;
+
+function load(key, def) {
+  try { const v = localStorage.getItem("savills_v2_"+key); return v !== null ? JSON.parse(v) : def; } catch(e){ return def; }
+}
+function save(key, val) {
+  try { localStorage.setItem("savills_v2_"+key, JSON.stringify(val)); } catch(e){}
+}
+
+// ── BUILD DOM ──
+const main = document.getElementById("main");
+
+SECTIONS.forEach(sec => {
+  const secEl = document.createElement("div");
+  secEl.className = "section";
+  secEl.dataset.dna = sec.dna;
+
+  const allIds = sec.groups.flatMap(g => g.items.filter(i=>!i.na).map(i=>i.id));
+
+  secEl.innerHTML = `
+    <div class="section-header" onclick="toggleSection(this)">
+      <div class="hdr-left">
+        <h2>${sec.title}</h2>
+        <span class="dna-label">Savills DNA</span>
+      </div>
+      <div class="sec-prog">
+        <span class="sec-pct" data-ids="${allIds.join(",")}" data-count="${allIds.length}">—</span>
+        <div class="mini-bar-track"><div class="mini-bar-fill" style="width:0%"></div></div>
+        <span class="toggle-icon">&#9660;</span>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="dna-card"><strong>What this means for you</strong>${sec.dnaDesc}</div>
+    </div>
+  `;
+
+  const body = secEl.querySelector(".section-body");
+
+  sec.groups.forEach(group => {
+    const sl = document.createElement("div");
+    sl.className = "sub-label";
+    sl.innerHTML = `${group.sub}<span class="sub-desc">${group.desc}</span>`;
+    body.appendChild(sl);
+
+    group.items.forEach(item => {
+      const savedStatus = item.na ? "na" : load("status_"+item.id, "0");
+      const savedNote   = item.na ? "" : load("note_"+item.id, "");
+
+      const row = document.createElement("div");
+      row.className = "comp-row" + (item.na ? " na-row" : "");
+
+      if (item.na) {
+        row.innerHTML = `<div class="comp-top"><div class="comp-text na-text">${item.text}</div></div>`;
+      } else {
+        row.innerHTML = `
+          <div class="comp-top">
+            <div class="dot dot-${savedStatus}" id="dot-${item.id}"></div>
+            <div class="comp-text">
+              ${item.text}
+              ${item.hint ? `<em>${item.hint}</em>` : ""}
+            </div>
+            <select class="status-select" id="sel-${item.id}" data-id="${item.id}" data-v="${savedStatus}">
+              <option value="0" ${savedStatus=="0"?"selected":""}>— Not yet rated</option>
+              <option value="1" ${savedStatus=="1"?"selected":""}>1 — Improvement required</option>
+              <option value="2" ${savedStatus=="2"?"selected":""}>2 — Development required</option>
+              <option value="3" ${savedStatus=="3"?"selected":""}>3 — Performing</option>
+              <option value="4" ${savedStatus=="4"?"selected":""}>4 — High performing</option>
+            </select>
+          </div>
+          <button class="evidence-toggle" onclick="toggleEvidence('${item.id}')">&#9654; Add evidence / notes</button>
+          <div class="evidence-area" id="ev-${item.id}">
+            <textarea id="note-${item.id}" placeholder="Describe how you have demonstrated this competency — specific examples, dates, or outcomes…">${savedNote}</textarea>
+          </div>
+        `;
+
+        body.appendChild(row);
+
+        const sel = row.querySelector("select");
+        sel.addEventListener("change", () => {
+          const v = sel.value;
+          sel.dataset.v = v;
+          document.getElementById("dot-"+item.id).className = "dot dot-"+v;
+          save("status_"+item.id, v);
+          updateCounts();
+          updateSectionProgress();
+          showSaveNote();
+        });
+
+        const ta = row.querySelector("textarea");
+        ta.addEventListener("input", () => {
+          save("note_"+item.id, ta.value);
+          showSaveNote();
+        });
+
+        if (savedNote) {
+          row.querySelector(".evidence-area").style.display = "block";
+          row.querySelector(".evidence-toggle").innerHTML = "&#9660; Evidence / notes";
+        }
+        return;
+      }
+
+      body.appendChild(row);
+    });
+  });
+
+  main.appendChild(secEl);
+});
+
+function toggleSection(header) {
+  const body = header.nextElementSibling;
+  body.classList.toggle("hidden");
+  header.classList.toggle("collapsed");
+}
+
+function toggleEvidence(id) {
+  const area = document.getElementById("ev-"+id);
+  const btn  = area.previousElementSibling;
+  if (area.style.display === "block") {
+    area.style.display = "none";
+    btn.innerHTML = "&#9654; Add evidence / notes";
+  } else {
+    area.style.display = "block";
+    btn.innerHTML = "&#9660; Evidence / notes";
+    area.querySelector("textarea").focus();
+  }
+}
+
+function updateCounts() {
+  let high=0, dev=0, imp=0, ns=0;
+  ALL_ITEMS.forEach(item => {
+    const v = parseInt(document.getElementById("sel-"+item.id)?.value||"0");
+    if      (v===0)           ns++;
+    else if (v===1)           imp++;
+    else if (v===2)           dev++;
+    else                      high++;
+  });
+  document.getElementById("cnt-total").textContent = TOTAL;
+  document.getElementById("cnt-high").textContent  = high;
+  document.getElementById("cnt-dev").textContent   = dev;
+  document.getElementById("cnt-imp").textContent   = imp;
+  document.getElementById("cnt-ns").textContent    = ns;
+
+  const rated = high + dev + imp;
+  const pct = rated === 0 ? 0 : Math.round((high * 1 + dev * 0.5) / TOTAL * 100);
+  document.getElementById("overall-pct").textContent = pct + "%";
+  document.getElementById("overall-bar").style.width = pct + "%";
+}
+
+function updateSectionProgress() {
+  document.querySelectorAll(".sec-pct").forEach(span => {
+    const ids = span.dataset.ids ? span.dataset.ids.split(",").filter(Boolean) : [];
+    if (!ids.length) return;
+    let rated=0, score=0;
+    ids.forEach(id => {
+      const v = parseInt(document.getElementById("sel-"+id)?.value||"0");
+      if (v > 0) { rated++; score += v; }
+    });
+    if (rated === 0) {
+      span.textContent = "—";
+      span.closest(".sec-prog").querySelector(".mini-bar-fill").style.width = "0%";
+    } else {
+      const avg = (score / (ids.length * 4) * 100).toFixed(0);
+      span.textContent = avg + "%";
+      span.closest(".sec-prog").querySelector(".mini-bar-fill").style.width = avg + "%";
+    }
+  });
+}
+
+let saveTimer;
+function showSaveNote() {
+  const n = document.getElementById("save-note");
+  n.textContent = "Saved ✓";
+  n.style.color = "var(--green)";
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    n.textContent = "Changes are saved automatically in your browser.";
+    n.style.color = "";
+  }, 2000);
+}
+
+// init
+document.getElementById("today").textContent = new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"long",year:"numeric"});
+
+const nameEl = document.getElementById("user-name");
+nameEl.textContent = load("username", "");
+nameEl.addEventListener("input", () => { 
+  save("username", nameEl.textContent.trim());
+  showSaveNote();
+});
+
+// Check for SharePoint config
+trackerSpConfig = getTrackerSharePointConfig();
+if (trackerSpConfig && trackerSpConfig.siteUrl) {
+  trackerUseSharePoint = true;
+  document.getElementById('sync-status-tracker').textContent = 'SharePoint Connected';
+  document.getElementById('sync-status-tracker').style.color = 'var(--green)';
+}
+
+updateCounts();
+updateSectionProgress();
+
+const ALL_IDS = ['rs1','rs2','wo1','wo2','wo3','wo4','wo5','wo6',
+                 'oe1','oe2','oe3','oe4','gi1','gi2','gi3',
+                 'dr1','mi1','mi2','mi3','ci1',
+                 'nw1','nw2','kh1','kh2','kh3','kh4','kh5','kh6','kh7','kh8'];
+
+// Generate and broadcast export code whenever tracker data changes
+function generateExportCode() {
+  const ratings = {};
+  ALL_IDS.forEach(id => {
+    const sel = document.getElementById('sel-'+id);
+    if (sel) ratings[id] = sel.value;
+  });
+  const data = {
+    v: 2,
+    name: document.getElementById('user-name').textContent.trim() || 'Unknown',
+    exported: new Date().toISOString().split('T')[0],
+    ratings
+  };
+  return 'SAVILLS-SENIOR-V2:' + btoa(encodeURIComponent(JSON.stringify(data)));
+}
+
+// Broadcast update signal to Manager Dashboard via localStorage
+function broadcastUpdate() {
+  const userData = document.getElementById('user-name').textContent.trim() || 'Unknown';
+  const exportKey = 'savills_auto_export_' + userData.replace(/\s+/g, '_').toLowerCase();
+  const code = generateExportCode();
+  try {
+    localStorage.setItem(exportKey, code);
+    localStorage.setItem('savills_last_broadcast', new Date().toISOString());
+  } catch(e) {}
+}
+
+// Manually update manager - uploads to SharePoint and broadcasts
+async function updateManagerDashboard() {
+  const userName = document.getElementById('user-name').textContent.trim();
+  if (!userName) {
+    alert('Please enter your name first');
+    return;
+  }
+
+  if (!trackerUseSharePoint || !trackerSpConfig) {
+    alert('SharePoint not configured. Please go to Settings first.');
+    return;
+  }
+
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = '⏳ Updating...';
+
+  try {
+    const exportData = JSON.parse(decodeURIComponent(atob(generateExportCode().slice(18))));
+    const filename = 'tracker_' + userName.replace(/\s+/g, '_').toLowerCase() + '.json';
+    const uploaded = await uploadTrackerToSharePoint(filename, exportData);
+
+    if (uploaded) {
+      // Broadcast to localStorage listeners
+      broadcastUpdate();
+      
+      btn.style.background = 'var(--green)';
+      btn.textContent = '✓ Manager Updated!';
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.style.background = '';
+        btn.textContent = '📤 Update Manager';
+      }, 2000);
+    } else {
+      throw new Error('Upload failed');
+    }
+  } catch(e) {
+    alert('Failed to update manager. Check your SharePoint configuration.');
+    btn.disabled = false;
+    btn.textContent = '📤 Update Manager';
+  }
+}
+
+function openExportModal() {
+  const code = generateExportCode();
+  document.getElementById('export-code-area').value = code;
+  document.getElementById('copy-confirm').textContent = '';
+  document.getElementById('export-modal').classList.add('open');
+}
+
+function closeExportModal() {
+  document.getElementById('export-modal').classList.remove('open');
+}
+
+function copyExportCode() {
+  const code = document.getElementById('export-code-area').value;
+  navigator.clipboard.writeText(code).then(() => {
+    document.getElementById('copy-confirm').textContent = 'Copied to clipboard ✓';
+  }).catch(() => {
+    document.getElementById('export-code-area').select();
+    document.execCommand('copy');
+    document.getElementById('copy-confirm').textContent = 'Copied ✓';
+  });
+}
+</script>
+</body>
+</html>
